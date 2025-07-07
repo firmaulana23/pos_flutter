@@ -1215,12 +1215,12 @@ curl -X DELETE http://localhost:8080/api/v1/users/1 \
 
 #### Get all categories (Public)
 ```bash
-curl -X GET http://localhost:8080/api/v1/public/categories
+curl -X GET http://localhost:8080/api/v1/public/menu/categories
 ```
 
 #### Create category (Admin/Manager only)
 ```bash
-curl -X POST http://localhost:8080/api/v1/categories \
+curl -X POST http://localhost:8080/api/v1/menu/categories \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

@@ -144,17 +144,27 @@ class ApiService {
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
       );
 
-      final data = _handleResponse(response);
-      print('Categories API Response: $data');
-      // According to API docs, categories are returned as direct array
-      if (data is List) {
-        print('Categories received as List: ${data.length} items');
-        return (data as List).map((category) => Category.fromJson(category)).toList();
+      // Handle response directly since categories API returns a direct array
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isEmpty) return [];
+        final data = json.decode(response.body);
+
+        // According to API docs, categories are returned as direct array
+        if (data is List) {
+          return (data as List).map((category) => Category.fromJson(category)).toList();
+        }
+        return [];
+      } else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Request failed with status ${response.statusCode}';
+        }
+        throw ApiException(errorMessage, response.statusCode);
       }
-      print('Categories not received as List, returning empty');
-      return [];
     } catch (e) {
-      print('Categories API Error: $e - returning empty list');
       return []; // Return empty list instead of throwing error
     }
   }
@@ -185,21 +195,42 @@ class ApiService {
   }
 
   static Future<List<AddOn>> getAddOns({bool usePublicEndpoint = false}) async {
-    final url = usePublicEndpoint 
-        ? '$publicBaseUrl/add-ons'
-        : '$baseUrl/add-ons';
     
-    final response = await http.get(
-      Uri.parse(url),
-      headers: await _getHeaders(includeAuth: !usePublicEndpoint),
-    );
+    try {
+        final url = usePublicEndpoint 
+            ? '$publicBaseUrl/add-ons'
+            : '$baseUrl/add-ons';
+        
+        final response = await http.get(
+        Uri.parse(url),
+        headers: await _getHeaders(includeAuth: !usePublicEndpoint),
+        );
 
-    final data = _handleResponse(response);
-    // According to API docs, add-ons are returned as direct array
-    if (data is List) {
-      return (data as List).map((addOn) => AddOn.fromJson(addOn)).toList();
+        // Handle response - add-ons API returns data wrapped in an object with "data" field
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            if (response.body.isEmpty) return [];
+            final jsonData = json.decode(response.body);
+            
+            
+            // Add-ons API returns data in {"data": [...], "limit": 10, "page": 1, "total": 12} format
+            if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
+                final data = jsonData['data'] as List;
+                return data.map((addOn) => AddOn.fromJson(addOn)).toList();
+            }
+            return [];
+        } else {
+            String errorMessage = 'Request failed';
+            try {
+            final errorData = json.decode(response.body);
+            errorMessage = errorData['message'] ?? errorMessage;
+            } catch (e) {
+            errorMessage = 'Request failed with status ${response.statusCode}';
+            }
+            throw ApiException(errorMessage, response.statusCode);
+        }
+    } catch (e) {
+        return []; // Return empty list instead of throwing error
     }
-    return [];
   }
 
   static Future<Category> createCategory(Map<String, dynamic> categoryData) async {

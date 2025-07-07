@@ -36,9 +36,9 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
 
   Future<void> _loadData() async {
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-    await menuProvider.loadCategories();
-    await menuProvider.loadMenuItems();
-    await menuProvider.loadAddOns();
+    await menuProvider.loadCategories(usePublicEndpoint: true);
+    await menuProvider.loadMenuItems(usePublicEndpoint: true);
+    await menuProvider.loadAddOns(usePublicEndpoint: true);
   }
 
   @override
