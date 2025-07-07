@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/theme.dart';
+import '../utils/permissions.dart';
 import 'pos_screen.dart';
 import 'transactions_screen.dart';
 import 'menu_management_screen.dart';
@@ -18,14 +19,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const POSScreen(),
-    const TransactionsScreen(),
-    const MenuManagementScreen(),
-    const DashboardScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -39,13 +32,23 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
 
-        // Filter navigation items based on user role
+        // Get role-based screens and navigation items
+        final screens = _getScreens(user.role);
         final navigationItems = _getNavigationItems(user.role);
+
+        // Ensure current index is valid for the role
+        if (_currentIndex >= screens.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _currentIndex = 0; // Reset to first tab
+            });
+          });
+        }
 
         return Scaffold(
           body: IndexedStack(
             index: _currentIndex,
-            children: _screens,
+            children: screens,
           ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
@@ -62,6 +65,28 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  List<Widget> _getScreens(String role) {
+    final List<Widget> screens = [
+      const POSScreen(),
+      const TransactionsScreen(),
+    ];
+
+    // Menu management for roles with permission
+    if (Permissions.canManageMenu(role)) {
+      screens.add(const MenuManagementScreen());
+    }
+
+    // Dashboard for roles with permission
+    if (Permissions.canViewDashboard(role)) {
+      screens.add(const DashboardScreen());
+    }
+
+    // Profile for all users
+    screens.add(const ProfileScreen());
+
+    return screens;
+  }
+
   List<BottomNavigationBarItem> _getNavigationItems(String role) {
     final List<BottomNavigationBarItem> items = [
       const BottomNavigationBarItem(
@@ -74,8 +99,8 @@ class _MainScreenState extends State<MainScreen> {
       ),
     ];
 
-    // Menu management for admin and manager
-    if (role == 'admin' || role == 'manager') {
+    // Menu management for roles with permission
+    if (Permissions.canManageMenu(role)) {
       items.add(
         const BottomNavigationBarItem(
           icon: Icon(Icons.restaurant_menu),
@@ -84,8 +109,8 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    // Dashboard for admin and manager
-    if (role == 'admin' || role == 'manager') {
+    // Dashboard for roles with permission  
+    if (Permissions.canViewDashboard(role)) {
       items.add(
         const BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),

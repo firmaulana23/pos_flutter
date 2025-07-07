@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/theme.dart';
 import '../utils/formatters.dart';
+import '../utils/permissions.dart';
 import '../widgets/common_widgets.dart';
 import 'login_screen.dart';
 import 'printer_settings_screen.dart';
@@ -262,16 +263,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   String _getRoleDisplayName(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'Administrator';
-      case 'manager':
-        return 'Manager';
-      case 'cashier':
-        return 'Kasir';
-      default:
-        return role;
-    }
+    return Permissions.getRoleDisplayName(role);
   }
 
   void _logout(BuildContext context, AuthProvider authProvider) async {
