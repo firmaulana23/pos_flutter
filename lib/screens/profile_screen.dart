@@ -5,6 +5,7 @@ import '../utils/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/common_widgets.dart';
 import 'login_screen.dart';
+import 'printer_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -190,6 +191,22 @@ class ProfileScreen extends StatelessWidget {
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
                   // TODO: Navigate to help
+                },
+              ),
+              
+              const Divider(height: 1),
+              
+              ListTile(
+                leading: const Icon(Icons.print_outlined),
+                title: const Text('Pengaturan Printer'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PrinterSettingsScreen(),
+                    ),
+                  );
                 },
               ),
               

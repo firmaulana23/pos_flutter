@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
 import '../services/api_service.dart';
+import '../services/thermal_printer_service.dart';
 
 class TransactionProvider with ChangeNotifier {
   List<Transaction> _transactions = [];
@@ -108,8 +109,30 @@ class TransactionProvider with ChangeNotifier {
         notifyListeners();
       }
 
+      // Print receipt if printer is connected
+      if (ThermalPrinterService.isConnected) {
+        try {
+          bool printSuccess = await ThermalPrinterService.printReceipt(updatedTransaction);
+          if (printSuccess) {
+            print('TransactionProvider: Receipt printed successfully');
+          } else {
+            print('TransactionProvider: Failed to print receipt');
+          }
+        } catch (e) {
+          print('TransactionProvider: Error printing receipt: $e');
+          // Don't fail the transaction if printing fails
+        }
+      } else {
+        print('TransactionProvider: Printer not connected, skipping receipt print');
+      }
+
       return true;
     } catch (e) {
+      print('TransactionProvider: Error processing payment: $e');
+      print('TransactionProvider: Error type: ${e.runtimeType}');
+      if (e is ApiException) {
+        print('TransactionProvider: API Exception - Status Code: ${e.statusCode}');
+      }
       _setError(e.toString());
       return false;
     } finally {

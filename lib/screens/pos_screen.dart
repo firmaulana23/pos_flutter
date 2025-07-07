@@ -676,14 +676,37 @@ class CartBottomSheet extends StatelessWidget {
     );
 
     if (selectedPaymentMethod != null) {
-      final transaction = await cartProvider.processPayment(selectedPaymentMethod.code);
+      // First create the transaction through cart provider
+      final transaction = await cartProvider.saveTransaction();
       
-      if (transaction != null && context.mounted) {
-        Navigator.pop(context);
+      if (transaction != null) {
+        // Then process payment through transaction provider (which includes automatic receipt printing)
+        final success = await transactionProvider.payTransaction(
+          transaction.id!,
+          selectedPaymentMethod.code,
+        );
+        
+        if (success && context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pembayaran ${AppFormatters.formatTransactionId(transaction.id!)} berhasil'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal memproses pembayaran: ${transactionProvider.error ?? 'Error tidak diketahui'}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pembayaran ${AppFormatters.formatTransactionId(transaction.id!)} berhasil'),
-            backgroundColor: AppColors.success,
+          const SnackBar(
+            content: Text('Gagal membuat transaksi'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
