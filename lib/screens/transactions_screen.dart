@@ -117,6 +117,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   Widget _buildTransactionCard(Transaction transaction) {
+    final authProvider = context.read<AuthProvider>();
+    final userRole = authProvider.user?.role ?? '';
+    final bool isAdminOrManager = userRole == 'admin' || userRole == 'manager';
+    
     return CustomCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -168,6 +172,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           ),
           
           if (transaction.isPending) ...[
+            // Pending transactions can be deleted by anyone
             const SizedBox(height: 12),
             Row(
               children: [
@@ -193,7 +198,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 ),
               ],
             ),
-          ] else ...[
+          ] else if (isAdminOrManager) ...[
+            // Only show delete button for paid transactions if user is admin or manager
             const SizedBox(height: 12),
             Row(
               children: [
@@ -211,6 +217,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   tooltip: 'Hapus (Admin)',
                 ),
               ],
+            ),
+          ] else ...[
+            // For regular users with paid transactions, only show details
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => _showTransactionDetails(transaction),
+              child: const Text('Lihat Detail'),
             ),
           ],
         ],
@@ -270,6 +283,21 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   void _showDeleteConfirmation(BuildContext context, Transaction transaction) {
+    final authProvider = context.read<AuthProvider>();
+    final userRole = authProvider.user?.role ?? '';
+    final bool isAdminOrManager = userRole == 'admin' || userRole == 'manager';
+    
+    // Check if user has permission to delete this transaction
+    if (transaction.isPaid && !isAdminOrManager) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hanya admin atau manager yang dapat menghapus transaksi yang sudah dibayar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -301,9 +329,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.warning),
                 ),
-                child: const Text(
-                  'Perhatian: Transaksi yang sudah dibayar hanya dapat dihapus oleh admin.',
-                  style: TextStyle(
+                child: Text(
+                  'Perhatian: Transaksi yang sudah dibayar hanya dapat dihapus oleh ${isAdminOrManager ? "admin/manager" : "admin"}.',
+                  style: const TextStyle(
                     color: AppColors.warning,
                     fontSize: 12,
                   ),
