@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
+import '../models/menu.dart';
 import '../services/api_service.dart';
 import '../services/thermal_printer_service.dart';
 
@@ -99,61 +100,165 @@ class TransactionProvider with ChangeNotifier {
 
       final updatedTransaction = await ApiService.payTransaction(
         transactionId, 
-        paymentMethodCode
+        paymentMethodCode,
       );
 
-      // Update the transaction in the list
-      final index = _transactions.indexWhere((t) => t.id == transactionId);
+      // Update local transaction data
+      final index = _transactions.indexWhere((t) => t.id == updatedTransaction.id);
       if (index >= 0) {
         _transactions[index] = updatedTransaction;
-        notifyListeners();
+      } else {
+        _transactions.add(updatedTransaction);
       }
-
-      // Print receipt if printer is connected
+      
+      // Print receipt after successful payment
       if (ThermalPrinterService.isConnected) {
+        print('TransactionProvider: Attempting to print receipt for transaction ${updatedTransaction.id}');
         try {
-          bool printSuccess = await ThermalPrinterService.printReceipt(updatedTransaction);
+          final printSuccess = await ThermalPrinterService.printReceipt(updatedTransaction);
           if (printSuccess) {
             print('TransactionProvider: Receipt printed successfully');
           } else {
             print('TransactionProvider: Failed to print receipt');
+            // Don't fail the payment transaction if receipt printing fails
           }
         } catch (e) {
           print('TransactionProvider: Error printing receipt: $e');
-          // Don't fail the transaction if printing fails
+          // Don't fail the payment transaction if receipt printing fails
         }
       } else {
-        print('TransactionProvider: Printer not connected, skipping receipt print');
+        print('TransactionProvider: Printer not connected, skipping receipt printing');
       }
-
+      
+      notifyListeners();
       return true;
     } catch (e) {
-      print('TransactionProvider: Error processing payment: $e');
-      print('TransactionProvider: Error type: ${e.runtimeType}');
-      if (e is ApiException) {
-        print('TransactionProvider: API Exception - Status Code: ${e.statusCode}');
-      }
       _setError(e.toString());
       return false;
     } finally {
       _setLoading(false);
     }
   }
-
-  Future<bool> deleteTransaction(int transactionId) async {
+  
+  // Add a new menu item to a pending transaction
+  Future<bool> addItemToTransaction(int transactionId, MenuItem menuItem, int quantity, List<CartAddOn>? addOns) async {
     try {
-      print('TransactionProvider: Starting delete operation for transaction $transactionId');
+      _setLoading(true);
+      _setError(null);
+      
+      // Format data for API
+      final itemData = {
+        'menu_item_id': menuItem.id,
+        'quantity': quantity,
+        'add_ons': (addOns ?? []).map((addOn) => {
+          'add_on_id': addOn.addOn.id,
+          'quantity': addOn.quantity,
+        }).toList(),
+      };
+      
+      // Add the item to the transaction
+      await ApiService.addItemToTransaction(transactionId, itemData);
+      
+      // Update local transaction data after item is added
+      await loadTransactions();
+      
+      return true;
+    } catch (e) {
+      _setError('Failed to add item to transaction: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Update an existing transaction item
+  Future<bool> updateTransactionItem(int transactionId, int itemId, int quantity, List<CartAddOn>? addOns) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+      
+      // Format data for API
+      final updateData = {
+        'quantity': quantity,
+        'add_ons': (addOns ?? []).map((addOn) => {
+          'add_on_id': addOn.addOn.id,
+          'quantity': addOn.quantity,
+        }).toList(),
+      };
+      
+      await ApiService.updateTransactionItem(transactionId, itemId, updateData);
+      
+      // Update local transaction data after item is updated
+      await loadTransactions();
+      
+      return true;
+    } catch (e) {
+      _setError('Failed to update transaction item: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Delete a transaction item
+  Future<bool> deleteTransactionItem(int transactionId, int itemId) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+      
+      await ApiService.deleteTransactionItem(transactionId, itemId);
+      
+      // Update local transaction data after item is deleted
+      await loadTransactions();
+      
+      return true;
+    } catch (e) {
+      _setError('Failed to delete transaction item: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Update basic transaction information
+  Future<bool> updateTransaction(int id, {String? customerName, double? tax, double? discount}) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+      
+      final updateData = <String, dynamic>{};
+      if (customerName != null) updateData['customer_name'] = customerName;
+      if (tax != null) updateData['tax'] = tax;
+      if (discount != null) updateData['discount'] = discount;
+      
+      await ApiService.updateTransaction(id, updateData);
+      
+      // Update local transaction data
+      await loadTransactions();
+      
+      return true;
+    } catch (e) {
+      _setError('Failed to update transaction: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> deleteTransaction(int id) async {
+    try {
+      print('TransactionProvider: Starting delete operation for transaction $id');
       _setLoading(true);
       _setError(null);
 
-      await ApiService.deleteTransaction(transactionId);
+      await ApiService.deleteTransaction(id);
 
       // Remove from the list and notify immediately
       final initialCount = _transactions.length;
-      _transactions.removeWhere((t) => t.id == transactionId);
+      _transactions.removeWhere((t) => t.id == id);
       final finalCount = _transactions.length;
       
-      print('TransactionProvider: Deleted transaction $transactionId. Count changed from $initialCount to $finalCount');
+      print('TransactionProvider: Deleted transaction $id. Count changed from $initialCount to $finalCount');
       
       // Force notify listeners before setting loading to false
       notifyListeners();

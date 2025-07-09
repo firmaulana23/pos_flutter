@@ -6,12 +6,14 @@ class MenuProvider with ChangeNotifier {
   List<menu_models.Category> _categories = [];
   List<menu_models.MenuItem> _menuItems = [];
   List<menu_models.AddOn> _addOns = [];
+  List<menu_models.AddOn> _menuItemAddOns = []; // Store add-ons for specific menu item
   bool _isLoading = false;
   String? _error;
 
   List<menu_models.Category> get categories => _categories;
   List<menu_models.MenuItem> get menuItems => _menuItems;
   List<menu_models.AddOn> get addOns => _addOns;
+  List<menu_models.AddOn> get menuItemAddOns => _menuItemAddOns; // Getter for menu item specific add-ons
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -81,30 +83,42 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadAddOns({bool usePublicEndpoint = false}) async {
+  Future<void> loadAddOns({bool usePublicEndpoint = false, bool resetError = true}) async {
     try {
       _setLoading(true);
-      _setError(null);
+      if (resetError) _setError(null);
 
+      print('MenuProvider: Loading add-ons with usePublicEndpoint: $usePublicEndpoint');
+      
       _addOns = await ApiService.getAddOns(usePublicEndpoint: usePublicEndpoint);
+      print('MenuProvider: Loaded ${_addOns.length} add-ons');
+      
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      print('MenuProvider: Error loading add-ons: $e');
+      _setError('Failed to load add-ons: $e');
     } finally {
       _setLoading(false);
     }
   }
 
-  // Load add-ons for a specific menu item
-  Future<List<menu_models.AddOn>> loadMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
+  // Add method to load add-ons specific to a menu item
+  Future<void> loadMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
     try {
-      print('MenuProvider: Loading add-ons for menu item $menuItemId...');
-      final addOns = await ApiService.getMenuItemAddOns(menuItemId, usePublicEndpoint: usePublicEndpoint);
-      print('MenuProvider: Loaded ${addOns.length} add-ons for menu item $menuItemId');
-      return addOns;
+      _setLoading(true);
+      _setError(null);
+
+      print('MenuProvider: Loading add-ons for menu item #$menuItemId');
+      
+      _menuItemAddOns = await ApiService.getMenuItemAddOns(menuItemId, usePublicEndpoint: usePublicEndpoint);
+      print('MenuProvider: Loaded ${_menuItemAddOns.length} add-ons for menu item #$menuItemId');
+      
+      notifyListeners();
     } catch (e) {
-      print('MenuProvider: Error loading add-ons for menu item $menuItemId: $e');
-      return [];
+      print('MenuProvider: Error loading add-ons for menu item: $e');
+      _setError('Failed to load add-ons for menu item: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 

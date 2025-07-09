@@ -127,7 +127,7 @@ class CartProvider with ChangeNotifier {
           'price': item.menuItem.price,
           'add_ons': item.addOns.map((addOn) => {
             'add_on_id': addOn.addOn.id,
-            'quantity': addOn.quantity * item.quantity, // Multiply add-on quantity by menu item quantity
+            'quantity': addOn.quantity, // Multiply add-on quantity by menu item quantity
             'price': addOn.addOn.price,
           }).toList(),
         }).toList(),

@@ -49,11 +49,14 @@ class ApiService {
       String errorMessage = 'Request failed';
       try {
         final errorData = json.decode(response.body);
-        errorMessage = errorData['message'] ?? errorMessage;
+        errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+        print('API Error Details: $errorData');
       } catch (e) {
-        errorMessage = 'Request failed with status ${response.statusCode}';
+        print('API Error: Could not decode response body: ${response.body}');
       }
-      throw ApiException(errorMessage, response.statusCode);
+      final fullError = 'Request failed with status ${response.statusCode}: $errorMessage (URL: ${response.request?.url})';
+      print(fullError);
+      throw ApiException(fullError, response.statusCode);
     }
   }
 
@@ -443,6 +446,96 @@ class ApiService {
     );
 
     _handleResponse(response);
+  }
+
+  // Add a new item to a pending transaction
+  static Future<TransactionItem> addItemToTransaction(int transactionId, Map<String, dynamic> itemData) async {
+    print('API Service: Adding item to transaction #$transactionId: $itemData');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/transactions/$transactionId/items'),
+      headers: await _getHeaders(),
+      body: json.encode(itemData),
+    );
+
+    print('API Service: Add item response status: ${response.statusCode}');
+    print('API Service: Add item response body: ${response.body}');
+    
+    final data = _handleResponse(response);
+    print('API Service: Add item parsed response: $data');
+    return TransactionItem.fromJson(data);
+  }
+
+  // Update an existing transaction item
+  static Future<TransactionItem> updateTransactionItem(int transactionId, int itemId, Map<String, dynamic> updateData) async {
+    print('API Service: Updating item #$itemId in transaction #$transactionId: $updateData');
+    
+    // Using the correct endpoint as per API docs
+    final url = '$baseUrl/transactions/$transactionId/items/$itemId';
+    print('API Service: Using URL: $url');
+    
+    final headers = await _getHeaders();
+    print('API Service: Headers: $headers');
+    
+    final jsonBody = json.encode(updateData);
+    print('API Service: Request body: $jsonBody');
+    
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonBody,
+      );
+
+      print('API Service: Update item response status: ${response.statusCode}');
+      print('API Service: Update item response body: ${response.body}');
+      
+      // Special handling for 404 errors to be more descriptive
+      if (response.statusCode == 404) {
+        print('API Service: 404 Not Found - Check if the transaction ID ($transactionId) and item ID ($itemId) are correct');
+        throw ApiException('Resource not found: The transaction or item does not exist or you do not have permission to update it', 404);
+      }
+      
+      final data = _handleResponse(response);
+      print('API Service: Update item parsed response: $data');
+      return TransactionItem.fromJson(data);
+    } catch (e) {
+      print('API Service: Exception during API call: $e');
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to update transaction item: $e');
+    }
+  }
+
+  // Delete a transaction item
+  static Future<void> deleteTransactionItem(int transactionId, int itemId) async {
+    print('API Service: Deleting item #$itemId from transaction #$transactionId');
+    
+    final response = await http.delete(
+      Uri.parse('$baseUrl/transactions/$transactionId/items/$itemId'),
+      headers: await _getHeaders(),
+    );
+
+    print('API Service: Delete item response status: ${response.statusCode}');
+    _handleResponse(response);
+  }
+
+  // Update basic transaction information
+  static Future<Transaction> updateTransaction(int id, Map<String, dynamic> updateData) async {
+    print('API Service: Updating transaction #$id: $updateData');
+    
+    final response = await http.put(
+      Uri.parse('$baseUrl/transactions/$id'),
+      headers: await _getHeaders(),
+      body: json.encode(updateData),
+    );
+
+    print('API Service: Update transaction response status: ${response.statusCode}');
+    print('API Service: Update transaction response body: ${response.body}');
+    
+    final data = _handleResponse(response);
+    return Transaction.fromJson(data);
   }
 
   // Expense API

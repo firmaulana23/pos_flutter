@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/menu_provider.dart';
 import '../models/transaction.dart';
+import '../models/menu.dart';
 import '../utils/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/common_widgets.dart';
@@ -102,197 +104,648 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   Widget _buildTransactionList(List<Transaction> transactions) {
     if (transactions.isEmpty) {
       return const EmptyStateWidget(
-        title: 'Tidak ada transaksi',
-        subtitle: 'Belum ada transaksi yang tersedia',
-        icon: Icons.receipt_long_outlined,
+        icon: Icons.receipt_long,
+        message: 'Tidak ada transaksi.',
       );
     }
 
-    return ListView.builder(
-      padding: AppStyles.defaultPadding,
-      itemCount: transactions.length,
-      itemBuilder: (context, index) {
-        return _buildTransactionCard(transactions[index]);
+    return RefreshIndicator(
+      onRefresh: () async {
+        _forceRefreshTransactions();
       },
-    );
-  }
-
-  Widget _buildTransactionCard(Transaction transaction) {
-    final authProvider = context.read<AuthProvider>();
-    final userRole = authProvider.user?.role ?? '';
-    final bool isAdminOrManager = userRole == 'admin' || userRole == 'manager';
-    
-    return CustomCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppFormatters.formatTransactionId(transaction.id!),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              StatusChip(
-                text: transaction.status.toUpperCase(),
-                color: transaction.isPaid ? AppColors.success : AppColors.warning,
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            AppFormatters.formatDateTime(transaction.createdAt),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurface.withOpacity(0.7),
-            ),
-          ),
-          
-          const SizedBox(height: 4),
-          
-          Text(
-            'Pelanggan: ${transaction.customerName}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurface.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            '${transaction.totalQuantity} item • ${AppFormatters.formatCurrency(transaction.total)}',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          
-          if (transaction.isPending) ...[
-            // Pending transactions can be deleted by anyone
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _showTransactionDetails(transaction),
-                    child: const Text('Detail'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _processPayment(transaction),
-                    child: const Text('Bayar'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _showDeleteConfirmation(context, transaction),
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.error,
-                  tooltip: 'Hapus',
-                ),
-              ],
-            ),
-          ] else if (isAdminOrManager) ...[
-            // Only show delete button for paid transactions if user is admin or manager
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _showTransactionDetails(transaction),
-                    child: const Text('Lihat Detail'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _showDeleteConfirmation(context, transaction),
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.error,
-                  tooltip: 'Hapus (Admin)',
-                ),
-              ],
-            ),
-          ] else ...[
-            // For regular users with paid transactions, only show details
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => _showTransactionDetails(transaction),
-              child: const Text('Lihat Detail'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showTransactionDetails(Transaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => TransactionDetailBottomSheet(
-        transaction: transaction,
-        onDelete: () {
-          // Close the bottom sheet first
-          Navigator.of(context).pop();
-          // Then show delete confirmation
-          _showDeleteConfirmation(context, transaction);
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: transactions.length,
+        itemBuilder: (context, index) {
+          final transaction = transactions[index];
+          return _buildTransactionCard(transaction);
         },
       ),
     );
   }
 
-  void _processPayment(Transaction transaction) async {
-    final transactionProvider = context.read<TransactionProvider>();
-    final paymentMethods = transactionProvider.paymentMethods;
+  Widget _buildTransactionCard(Transaction transaction) {
+    final isPending = transaction.status == 'pending';
+    final authProvider = Provider.of<AuthProvider>(context);
+    final bool isAdminOrManager = authProvider.currentUser != null && 
+                                 (authProvider.currentUser!.isAdmin || 
+                                  authProvider.currentUser!.isManager);
 
-    if (paymentMethods.isEmpty) {
-      await transactionProvider.loadPaymentMethods(usePublicEndpoint: true);
-    }
-
-    if (context.mounted) {
-      final selectedPaymentMethod = await showDialog<PaymentMethod>(
-        context: context,
-        builder: (context) => PaymentMethodDialog(
-          paymentMethods: transactionProvider.paymentMethods,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isPending ? Colors.orange.shade200 : Colors.green.shade200,
+          width: 1,
         ),
-      );
-
-      if (selectedPaymentMethod != null) {
-        final success = await transactionProvider.payTransaction(
-          transaction.id!,
-          selectedPaymentMethod.code,
-        );
-
-        if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Pembayaran ${AppFormatters.formatTransactionId(transaction.id!)} berhasil'),
-              backgroundColor: AppColors.success,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: isPending ? Colors.orange.shade50 : Colors.green.shade50,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
-          );
-        }
-      }
-    }
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        transaction.transactionNo ?? 'New Transaction',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppFormatters.formatDateTime(transaction.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isPending ? Colors.orange : Colors.green,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isPending ? 'Pending' : 'Paid',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Customer: ${transaction.customerName.isNotEmpty ? transaction.customerName : "N/A"}',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const Spacer(),
+                    // Only show edit button for pending transactions
+                    if (isPending)
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 16),
+                        onPressed: () => _showEditCustomerNameDialog(transaction),
+                        tooltip: 'Edit Customer Name',
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                        color: Colors.blue,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 8),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: transaction.items.length,
+                  itemBuilder: (context, index) {
+                    final item = transaction.items[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${item.quantity}x ${item.menuItem?.name ?? 'Unknown Item'}',
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                if (item.addOns.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: item.addOns.map((addon) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(left: 16),
+                                        child: Text(
+                                          '+ ${addon.quantity}x ${addon.addOn?.name ?? 'Unknown Add-on'}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          Text(
+                            AppFormatters.formatCurrency(item.total),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          // Edit item button for pending transactions
+                          if (isPending)
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 18),
+                              onPressed: () => _showEditItemDialog(transaction, item),
+                              tooltip: 'Edit Item',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.only(left: 8),
+                              color: Colors.blue,
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                // Add new item button for pending transactions
+                if (isPending)
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddItemDialog(transaction),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Item'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade100,
+                      foregroundColor: Colors.blue.shade700,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Subtotal'),
+                    Text(AppFormatters.formatCurrency(transaction.subTotal)),
+                  ],
+                ),
+                if (transaction.tax > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tax'),
+                      Text(AppFormatters.formatCurrency(transaction.tax)),
+                    ],
+                  ),
+                ],
+                if (transaction.discount > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Discount'),
+                      Text(
+                        '- ${AppFormatters.formatCurrency(transaction.discount)}',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      AppFormatters.formatCurrency(transaction.total),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Allow deletes only for:
+                // 1. Pending transactions (by any user)
+                // 2. Paid transactions (only by admin/manager)
+                if (isPending || isAdminOrManager) 
+                  OutlinedButton.icon(
+                    onPressed: () => _showDeleteConfirmation(transaction),
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    label: const Text('Delete'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                const SizedBox(width: 12),
+                if (isPending)
+                  ElevatedButton.icon(
+                    onPressed: () => _showPaymentDialog(transaction),
+                    icon: const Icon(Icons.payment),
+                    label: const Text('Process Payment'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _showDeleteConfirmation(BuildContext context, Transaction transaction) {
-    final authProvider = context.read<AuthProvider>();
-    final userRole = authProvider.user?.role ?? '';
-    final bool isAdminOrManager = userRole == 'admin' || userRole == 'manager';
+  // Dialog to add a new item to a pending transaction
+  void _showAddItemDialog(Transaction transaction) async {
+    // Load menu items
+    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+    await menuProvider.loadMenuItems(usePublicEndpoint: true);
     
-    // Check if user has permission to delete this transaction
-    if (transaction.isPaid && !isAdminOrManager) {
+    if (!mounted) return;
+
+    MenuItem? selectedMenuItem;
+    int quantity = 1;
+    final List<CartAddOn> selectedAddOns = [];
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add Item to Transaction'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<MenuItem>(
+                      decoration: const InputDecoration(
+                        labelText: 'Select Menu Item',
+                      ),
+                      value: selectedMenuItem,
+                      items: menuProvider.menuItems
+                          .where((item) => item.isAvailable) // Only available items
+                          .map((item) {
+                        return DropdownMenuItem<MenuItem>(
+                          value: item,
+                          child: Text('${item.name} (${AppFormatters.formatCurrency(item.price)})'),
+                        );
+                      }).toList(),
+                      onChanged: (MenuItem? value) async {
+                        if (value != null) {
+                          setState(() {
+                            selectedMenuItem = value;
+                            selectedAddOns.clear(); // Reset add-ons when item changes
+                          });
+                          
+                          // Load add-ons for this menu item
+                          if (selectedMenuItem != null) {
+                            await menuProvider.loadMenuItemAddOns(selectedMenuItem!.id);
+                            
+                            if (!context.mounted) return;
+                            setState(() {}); // Refresh to update available add-ons
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Text('Quantity: '),
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: () {
+                            if (quantity > 1) {
+                              setState(() => quantity--);
+                            }
+                          },
+                        ),
+                        Text('$quantity'),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            setState(() => quantity++);
+                          },
+                        ),
+                      ],
+                    ),
+                    if (selectedMenuItem != null) ...[
+                      const SizedBox(height: 16),
+                      const Text('Add-ons (Optional):'),
+                      const SizedBox(height: 8),
+                      ...menuProvider.menuItemAddOns
+                          .where((addOn) => addOn.isAvailable)
+                          .map((addOn) {
+                        final isSelected = selectedAddOns.any((a) => a.addOn.id == addOn.id);
+                        final selectedAddOn = isSelected 
+                            ? selectedAddOns.firstWhere((a) => a.addOn.id == addOn.id) 
+                            : null;
+                        
+                        return CheckboxListTile(
+                          title: Text(addOn.name),
+                          subtitle: Text(AppFormatters.formatCurrency(addOn.price)),
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedAddOns.add(CartAddOn(addOn: addOn));
+                              } else {
+                                selectedAddOns.removeWhere((a) => a.addOn.id == addOn.id);
+                              }
+                            });
+                          },
+                          secondary: isSelected
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove, size: 16),
+                                      onPressed: () {
+                                        setState(() {
+                                          final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
+                                          if (index != -1 && selectedAddOns[index].quantity > 1) {
+                                            selectedAddOns[index] = CartAddOn(
+                                              addOn: addOn,
+                                              quantity: selectedAddOns[index].quantity - 1,
+                                            );
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    Text('${selectedAddOn?.quantity ?? 1}'),
+                                    IconButton(
+                                      icon: const Icon(Icons.add, size: 16),
+                                      onPressed: () {
+                                        setState(() {
+                                          final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
+                                          if (index != -1) {
+                                            selectedAddOns[index] = CartAddOn(
+                                              addOn: addOn,
+                                              quantity: selectedAddOns[index].quantity + 1,
+                                            );
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                )
+                              : null,
+                        );
+                      }).toList(),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedMenuItem == null
+                      ? null
+                      : () async {
+                          Navigator.pop(context);
+                          final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+                          
+                          final success = await transactionProvider.addItemToTransaction(
+                            transaction.id!,
+                            selectedMenuItem!,
+                            quantity,
+                            selectedAddOns,
+                          );
+                          
+                          if (!mounted) return;
+                          
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Item added successfully')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(transactionProvider.error ?? 'Failed to add item'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  child: const Text('Add Item'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Dialog to edit an existing transaction item
+  void _showEditItemDialog(Transaction transaction, TransactionItem item) async {
+    // Load menu items and add-ons
+    final menuProvider = Provider.of<MenuProvider>(context, listen: false);
+    await menuProvider.loadMenuItemAddOns(item.menuItemId);
+    
+    if (!mounted) return;
+
+    int quantity = item.quantity;
+    final List<CartAddOn> selectedAddOns = [];
+    
+    // Convert existing add-ons to CartAddOn format
+    for (final addon in item.addOns) {
+      if (addon.addOn != null) {
+        selectedAddOns.add(CartAddOn(
+          addOn: addon.addOn!,
+          quantity: addon.quantity,
+        ));
+      }
+    }
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Menu Item'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Item: ${item.menuItem?.name ?? 'Unknown Item'}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Text('Quantity: '),
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: () {
+                            if (quantity > 1) {
+                              setState(() => quantity--);
+                            }
+                          },
+                        ),
+                        Text('$quantity'),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            setState(() => quantity++);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Add-ons:'),
+                    const SizedBox(height: 8),
+                    ...menuProvider.menuItemAddOns
+                        .where((addOn) => addOn.isAvailable)
+                        .map((addOn) {
+                      final isSelected = selectedAddOns.any((a) => a.addOn.id == addOn.id);
+                      final selectedAddOn = isSelected 
+                          ? selectedAddOns.firstWhere((a) => a.addOn.id == addOn.id) 
+                          : null;
+                      
+                      return CheckboxListTile(
+                        title: Text(addOn.name),
+                        subtitle: Text(AppFormatters.formatCurrency(addOn.price)),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              selectedAddOns.add(CartAddOn(addOn: addOn));
+                            } else {
+                              selectedAddOns.removeWhere((a) => a.addOn.id == addOn.id);
+                            }
+                          });
+                        },
+                        secondary: isSelected
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
+                                        if (index != -1 && selectedAddOns[index].quantity > 1) {
+                                          selectedAddOns[index] = CartAddOn(
+                                            addOn: addOn,
+                                            quantity: selectedAddOns[index].quantity - 1,
+                                          );
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  Text('${selectedAddOn?.quantity ?? 1}'),
+                                  IconButton(
+                                    icon: const Icon(Icons.add, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
+                                        if (index != -1) {
+                                          selectedAddOns[index] = CartAddOn(
+                                            addOn: addOn,
+                                            quantity: selectedAddOns[index].quantity + 1,
+                                          );
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              )
+                            : null,
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+                    
+                    final success = await transactionProvider.updateTransactionItem(
+                      transaction.id!,
+                      item.id!,
+                      quantity,
+                      selectedAddOns,
+                    );
+                    
+                    if (!mounted) return;
+                    
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Item updated successfully')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(transactionProvider.error ?? 'Failed to update item'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Update Item'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Show confirmation dialog before deleting a transaction
+  void _showDeleteConfirmation(Transaction transaction) {
+    final isPending = transaction.status == 'pending';
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final bool isAdminOrManager = authProvider.currentUser != null && 
+                                  (authProvider.currentUser!.isAdmin || 
+                                   authProvider.currentUser!.isManager);
+    
+    // Check permission: only admins/managers can delete paid transactions
+    if (!isPending && !isAdminOrManager) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Hanya admin atau manager yang dapat menghapus transaksi yang sudah dibayar'),
+          content: Text('Only admin or manager can delete paid transactions'),
           backgroundColor: Colors.red,
         ),
       );
@@ -302,370 +755,209 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Transaksi'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Apakah Anda yakin ingin menghapus transaksi ini?'),
-            const SizedBox(height: 8),
-            Text(
-              'ID: ${AppFormatters.formatTransactionId(transaction.id!)}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(
-              'Pelanggan: ${transaction.customerName}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(
-              'Total: ${AppFormatters.formatCurrency(transaction.total)}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            if (transaction.isPaid)
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning),
-                ),
-                child: Text(
-                  'Perhatian: Transaksi yang sudah dibayar hanya dapat dihapus oleh ${isAdminOrManager ? "admin/manager" : "admin"}.',
-                  style: const TextStyle(
-                    color: AppColors.warning,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-          ],
+        title: Text('Delete ${isPending ? 'Pending' : 'Paid'} Transaction'),
+        content: Text(
+          'Are you sure you want to delete this transaction?\n'
+          'Transaction No: ${transaction.transactionNo ?? 'N/A'}\n'
+          'This action cannot be undone.'
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deleteTransaction(context, transaction);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deleteTransaction(BuildContext context, Transaction transaction) async {
-    final transactionProvider = context.read<TransactionProvider>();
-    
-    // Prevent multiple delete operations
-    if (transactionProvider.isLoading) {
-      return;
-    }
-    
-    try {
-      // Add timeout to prevent infinite loading
-      final success = await transactionProvider.deleteTransaction(transaction.id!).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          print('Delete transaction timeout');
-          return false;
-        },
-      );
-      
-      if (success && context.mounted) {
-        // Force a rebuild of the widget tree
-        if (mounted) {
-          setState(() {
-            // This empty setState will force a rebuild
-          });
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Transaksi ${AppFormatters.formatTransactionId(transaction.id!)} berhasil dihapus'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menghapus transaksi: ${transactionProvider.error ?? 'Error tidak diketahui'}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
-  }
-}
-
-class TransactionDetailBottomSheet extends StatelessWidget {
-  final Transaction transaction;
-  final VoidCallback? onDelete;
-
-  const TransactionDetailBottomSheet({
-    super.key,
-    required this.transaction,
-    this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.disabled,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Detail Transaksi',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                StatusChip(
-                  text: transaction.status.toUpperCase(),
-                  color: transaction.isPaid ? AppColors.success : AppColors.warning,
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(),
-          
-          // Transaction Info
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoRow('ID Transaksi', AppFormatters.formatTransactionId(transaction.id!)),
-                _buildInfoRow('Pelanggan', transaction.customerName),
-                _buildInfoRow('Tanggal', AppFormatters.formatDateTime(transaction.createdAt)),
-                if (transaction.paymentMethod != null)
-                  _buildInfoRow('Metode Pembayaran', transaction.paymentMethod!),
-              ],
-            ),
-          ),
-          
-          const Divider(),
-          
-          // Items
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: transaction.items.length,
-              itemBuilder: (context, index) {
-                return _buildTransactionItem(context, transaction.items[index]);
-              },
-            ),
-          ),
-          
-          // Summary
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.divider)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total (${transaction.totalQuantity} item)',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      AppFormatters.formatCurrency(transaction.total),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Delete button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Hapus Transaksi'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+              
+              try {
+                await transactionProvider.deleteTransaction(transaction.id!);
+                
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Transaction deleted successfully')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete transaction: ${e.toString()}'),
+                    backgroundColor: Colors.red,
                   ),
-                ),
-              ],
-            ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: AppColors.disabled,
-              ),
-            ),
-          ),
-          const Text(': '),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionItem(BuildContext context, TransactionItem item) {
-    return CustomCard(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  
+  // Process payment for a pending transaction
+  void _showPaymentDialog(Transaction transaction) {
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+    String selectedPaymentMethod = transactionProvider.paymentMethods.isNotEmpty 
+        ? transactionProvider.paymentMethods.first.code 
+        : '';
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Process Payment'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.menuItem?.name ?? 'Menu Item',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '${AppFormatters.formatCurrency(item.price)} x ${item.quantity}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Text(
-                AppFormatters.formatCurrency(item.subtotal),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                'Transaction: ${transaction.transactionNo ?? "#${transaction.id}"}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('Total: ${AppFormatters.formatCurrency(transaction.total)}'),
+              const SizedBox(height: 16),
+              const Text('Select Payment Method:'),
+              const SizedBox(height: 8),
+              if (transactionProvider.paymentMethods.isEmpty)
+                const Text('Loading payment methods...', style: TextStyle(fontStyle: FontStyle.italic))
+              else
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return DropdownButtonFormField<String>(
+                      value: selectedPaymentMethod,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: transactionProvider.paymentMethods
+                          .where((pm) => pm.isActive)
+                          .map((pm) {
+                        return DropdownMenuItem<String>(
+                          value: pm.code,
+                          child: Text(pm.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPaymentMethod = value ?? '';
+                        });
+                      },
+                    );
+                  },
                 ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: selectedPaymentMethod.isEmpty 
+                  ? null 
+                  : () async {
+                      Navigator.pop(context);
+                      final success = await transactionProvider.payTransaction(
+                        transaction.id!,
+                        selectedPaymentMethod,
+                      );
+                      
+                      if (!context.mounted) return;
+                      
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Payment processed successfully')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(transactionProvider.error ?? 'Failed to process payment'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Process Payment'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show dialog to edit customer name for a pending transaction
+  void _showEditCustomerNameDialog(Transaction transaction) {
+    final TextEditingController _customerNameController = TextEditingController(text: transaction.customerName);
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Customer Name'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Transaction: ${transaction.transactionNo ?? "#${transaction.id}"}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _customerNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Customer Name',
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter customer name',
+                ),
+                textCapitalization: TextCapitalization.words,
+                autofocus: true,
               ),
             ],
           ),
-          
-          if (item.addOns.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            ...item.addOns.map((addOn) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '+ ${addOn.addOn?.name ?? 'Add-on'} (${addOn.quantity}x)',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    AppFormatters.formatCurrency(addOn.totalPrice),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w500,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                
+                final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+                final newName = _customerNameController.text.trim();
+                
+                final success = await transactionProvider.updateTransaction(
+                  transaction.id!,
+                  customerName: newName,
+                );
+                
+                if (!context.mounted) return;
+                
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Customer name updated successfully')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(transactionProvider.error ?? 'Failed to update customer name'),
+                      backgroundColor: Colors.red,
                     ),
-                  ),
-                ],
-              ),
-            )),
+                  );
+                }
+              },
+              child: const Text('Update'),
+            ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class PaymentMethodDialog extends StatelessWidget {
-  final List<PaymentMethod> paymentMethods;
-
-  const PaymentMethodDialog({
-    super.key,
-    required this.paymentMethods,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Pilih Metode Pembayaran'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: paymentMethods.map((method) {
-          return ListTile(
-            title: Text(method.name),
-            subtitle: method.description != null ? Text(method.description!) : null,
-            onTap: () => Navigator.of(context).pop(method),
-          );
-        }).toList(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Batal'),
-        ),
-      ],
+        );
+      },
     );
   }
 }

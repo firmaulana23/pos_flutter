@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 40),
               
               // Demo Account Info
-              _buildDemoAccountInfo(),
+              // _buildDemoAccountInfo(),
             ],
           ),
         ),

@@ -8,6 +8,7 @@ class AuthProvider with ChangeNotifier {
   String? _error;
 
   User? get user => _user;
+  User? get currentUser => _user; // Alias for user to make code more readable
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;

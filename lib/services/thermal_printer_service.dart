@@ -229,7 +229,7 @@ class ThermalPrinterService {
 
     // Header
     bytes += generator.text(
-      'COFFEE SHOP POS',
+      'ZONA12 COFFEE',
       styles: const PosStyles(
         align: PosAlign.center,
         height: PosTextSize.size2,
@@ -239,12 +239,12 @@ class ThermalPrinterService {
     );
     
     bytes += generator.text(
-      'Jl. Contoh No. 123',
+      'Jl. Permana Utara No. 122',
       styles: const PosStyles(align: PosAlign.center),
     );
     
     bytes += generator.text(
-      'Tel: (021) 123-4567',
+      'Tel: 085258179632',
       styles: const PosStyles(align: PosAlign.center),
     );
     
@@ -439,17 +439,25 @@ class ThermalPrinterService {
     
     // Footer
     bytes += generator.text(
-      'Terima kasih atas kunjungan Anda!',
+      'Terima kasih atas kunjungannya',
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
     
     bytes += generator.text(
-      'Semoga hari Anda menyenangkan',
+      'Selamat menikmati',
       styles: const PosStyles(align: PosAlign.center),
     );
     
-    bytes += generator.emptyLines(2);
+    bytes += generator.emptyLines(1);
     
+    bytes += generator.text(
+      'wifi: ZONA12_COFFEE',
+      styles: const PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'pass: zona12kopi',
+      styles: const PosStyles(align: PosAlign.center),
+    );
     // Cut paper
     bytes += generator.cut();
     
@@ -463,8 +471,8 @@ class ThermalPrinterService {
         return 'Tunai';
       case 'card':
         return 'Kartu Kredit';
-      case 'digital_wallet':
-        return 'E-Wallet';
+      case 'qris':
+        return 'Qris';
       default:
         return code;
     }
