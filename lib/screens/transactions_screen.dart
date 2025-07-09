@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/transaction.dart';
 import '../utils/theme.dart';
 import '../utils/formatters.dart';

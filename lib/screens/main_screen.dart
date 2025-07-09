@@ -69,12 +69,14 @@ class _MainScreenState extends State<MainScreen> {
     final List<Widget> screens = [
       const POSScreen(),
       const TransactionsScreen(),
+      const MenuManagementScreen(),
+      const ProfileScreen(),
     ];
 
     // Menu management for roles with permission
-    if (Permissions.canManageMenu(role)) {
-      screens.add(const MenuManagementScreen());
-    }
+    // if (Permissions.canManageMenu(role)) {
+    //   screens.add(const MenuManagementScreen());
+    // }
 
     // Dashboard for roles with permission
     // if (Permissions.canViewDashboard(role)) {
@@ -82,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
     // }
 
     // Profile for all users
-    screens.add(const ProfileScreen());
+    // screens.add(const ProfileScreen());
 
     return screens;
   }
@@ -97,17 +99,25 @@ class _MainScreenState extends State<MainScreen> {
         icon: Icon(Icons.receipt_long),
         label: 'Transaksi',
       ),
-    ];
-
-    // Menu management for roles with permission
-    if (Permissions.canManageMenu(role)) {
-      items.add(
-        const BottomNavigationBarItem(
+      const BottomNavigationBarItem(
           icon: Icon(Icons.restaurant_menu),
           label: 'Menu',
         ),
-      );
-    }
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.person),
+        label: 'Profil',
+      ),
+    ];
+
+    // Menu management for roles with permission
+    // if (Permissions.canManageMenu(role)) {
+    //   items.add(
+    //     const BottomNavigationBarItem(
+    //       icon: Icon(Icons.restaurant_menu),
+    //       label: 'Menu',
+    //     ),
+    //   );
+    // }
 
     // Dashboard for roles with permission  
     // if (Permissions.canViewDashboard(role)) {
@@ -120,12 +130,12 @@ class _MainScreenState extends State<MainScreen> {
     // }
 
     // Profile for all users
-    items.add(
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.person),
-        label: 'Profil',
-      ),
-    );
+    // items.add(
+    //   const BottomNavigationBarItem(
+    //     icon: Icon(Icons.person),
+    //     label: 'Profil',
+    //   ),
+    // );
 
     return items;
   }

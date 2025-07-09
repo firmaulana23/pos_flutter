@@ -28,7 +28,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {
-        // Trigger rebuild to update FloatingActionButton
+        // Trigger rebuild when tab changes
       });
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,19 +69,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
           _buildAddOnsTab(),
         ],
       ),
-      floatingActionButton: _tabController.index == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => _showCreateMenuItemDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('New Menu'),
-              tooltip: 'Create New Menu Item',
-            )
-          : FloatingActionButton.extended(
-              onPressed: () => _showCreateAddOnDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('New Add-on'),
-              tooltip: 'Create New Add-on',
-            ),
     );
   }
 
@@ -221,9 +208,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
-                          onPressed: selectedCategory != null
-                              ? () => _showMenuItemDialog()
-                              : null,
+                          onPressed: () => _showCreateMenuItemDialog(),
                           icon: const Icon(Icons.add),
                           label: const Text('Add Item'),
                         ),
