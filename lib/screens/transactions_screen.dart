@@ -36,6 +36,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     });
   }
 
+  // Alternative method to force refresh the transaction list
+  void _forceRefreshTransactions() {
+    final transactionProvider = context.read<TransactionProvider>();
+    // Force a complete reload from the server
+    transactionProvider.loadTransactions();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +72,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             child: Consumer<TransactionProvider>(
               builder: (context, transactionProvider, child) {
                 if (transactionProvider.isLoading) {
-                  return const LoadingWidget(message: 'Memuat transaksi...');
+                  return const LoadingWidget(message: 'Memproses...');
                 }
 
                 if (transactionProvider.error != null) {
@@ -140,6 +147,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
           ),
           
+          const SizedBox(height: 4),
+          
+          Text(
+            'Pelanggan: ${transaction.customerName}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.onSurface.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          
           const SizedBox(height: 8),
           
           Text(
@@ -167,16 +184,33 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     child: const Text('Bayar'),
                   ),
                 ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showDeleteConfirmation(context, transaction),
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.error,
+                  tooltip: 'Hapus',
+                ),
               ],
             ),
           ] else ...[
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _showTransactionDetails(transaction),
-                child: const Text('Lihat Detail'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _showTransactionDetails(transaction),
+                    child: const Text('Lihat Detail'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showDeleteConfirmation(context, transaction),
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.error,
+                  tooltip: 'Hapus (Admin)',
+                ),
+              ],
             ),
           ],
         ],
@@ -189,7 +223,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TransactionDetailBottomSheet(transaction: transaction),
+      builder: (context) => TransactionDetailBottomSheet(
+        transaction: transaction,
+        onDelete: () {
+          // Close the bottom sheet first
+          Navigator.of(context).pop();
+          // Then show delete confirmation
+          _showDeleteConfirmation(context, transaction);
+        },
+      ),
     );
   }
 
@@ -226,14 +268,131 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       }
     }
   }
+
+  void _showDeleteConfirmation(BuildContext context, Transaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Transaksi'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Apakah Anda yakin ingin menghapus transaksi ini?'),
+            const SizedBox(height: 8),
+            Text(
+              'ID: ${AppFormatters.formatTransactionId(transaction.id!)}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              'Pelanggan: ${transaction.customerName}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              'Total: ${AppFormatters.formatCurrency(transaction.total)}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            if (transaction.isPaid)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.warning),
+                ),
+                child: const Text(
+                  'Perhatian: Transaksi yang sudah dibayar hanya dapat dihapus oleh admin.',
+                  style: TextStyle(
+                    color: AppColors.warning,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteTransaction(context, transaction);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteTransaction(BuildContext context, Transaction transaction) async {
+    final transactionProvider = context.read<TransactionProvider>();
+    
+    // Prevent multiple delete operations
+    if (transactionProvider.isLoading) {
+      return;
+    }
+    
+    try {
+      // Add timeout to prevent infinite loading
+      final success = await transactionProvider.deleteTransaction(transaction.id!).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('Delete transaction timeout');
+          return false;
+        },
+      );
+      
+      if (success && context.mounted) {
+        // Force a rebuild of the widget tree
+        if (mounted) {
+          setState(() {
+            // This empty setState will force a rebuild
+          });
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Transaksi ${AppFormatters.formatTransactionId(transaction.id!)} berhasil dihapus'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus transaksi: ${transactionProvider.error ?? 'Error tidak diketahui'}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 }
 
 class TransactionDetailBottomSheet extends StatelessWidget {
   final Transaction transaction;
+  final VoidCallback? onDelete;
 
   const TransactionDetailBottomSheet({
     super.key,
     required this.transaction,
+    this.onDelete,
   });
 
   @override
@@ -284,6 +443,7 @@ class TransactionDetailBottomSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildInfoRow('ID Transaksi', AppFormatters.formatTransactionId(transaction.id!)),
+                _buildInfoRow('Pelanggan', transaction.customerName),
                 _buildInfoRow('Tanggal', AppFormatters.formatDateTime(transaction.createdAt)),
                 if (transaction.paymentMethod != null)
                   _buildInfoRow('Metode Pembayaran', transaction.paymentMethod!),
@@ -330,6 +490,21 @@ class TransactionDetailBottomSheet extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                // Delete button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Hapus Transaksi'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
                 ),
               ],
             ),

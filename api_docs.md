@@ -1,1669 +1,812 @@
-# POS System Coffee Shop - API Documentation
+# POS System API Documentation
 
 ## Base URL
 ```
 http://localhost:8080/api/v1
 ```
 
+## Key Features
+
+### Menu-Dependent Add-ons
+The POS system supports two types of add-ons:
+
+1. **Global Add-ons** (`menu_item_id: null`): Available for all menu items
+   - Example: "Whipped Cream", "Extra Hot", "Decaf"
+   
+2. **Menu-Specific Add-ons** (`menu_item_id: 4`): Only available for specific menu items
+   - Example: "Latte Art" (only for Lattes), "Extra Foam" (only for Cappuccinos)
+
+This allows for better organization and more relevant add-on options for customers.
+
+### New Endpoints for Menu-Dependent Add-ons:
+- `GET /api/v1/public/menu-item-add-ons/{menu_item_id}` - Get add-ons for specific menu item
+- `GET /api/v1/add-ons?menu_item_id=4` - Filter add-ons by menu item
+- `GET /api/v1/add-ons?menu_item_id=global` - Get only global add-ons
+
 ## Authentication
-Most endpoints require JWT authentication. Include the token in the Authorization header:
+
+The API uses JWT Bearer tokens for authentication. Include the token in the Authorization header:
 ```
 Authorization: Bearer <jwt_token>
 ```
 
----
+### Login
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
 
-## 1. Authentication Endpoints
-
-### 1.1 User Registration
-**POST** `/auth/register`
-
-**Request Body:**
-```json
 {
-  "username": "john_doe",
-  "email": "john@example.com",
-  "password": "password123",
-  "full_name": "John Doe",
-  "role": "cashier"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "message": "User registered successfully",
-  "user": {
-    "id": 1,
-    "username": "john_doe",
-    "email": "john@example.com",
-    "full_name": "John Doe",
-    "role": "cashier",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  }
-}
-```
-
-**Response (400 Bad Request):**
-```json
-{
-  "error": "Username already exists"
-}
-```
-
-### 1.2 User Login
-**POST** `/auth/login`
-
-**Request Body:**
-```json
-{
-  "username": "john_doe",
-  "password": "password123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Login successful",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "username": "john_doe",
-    "email": "john@example.com",
-    "full_name": "John Doe",
-    "role": "cashier"
-  }
-}
-```
-
-**Response (401 Unauthorized):**
-```json
-{
-  "error": "Invalid credentials"
-}
-```
-
----
-
-## 2. User Management Endpoints
-
-### 2.1 Get All Users
-**GET** `/users`
-*Requires: Admin or Manager role*
-
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "username": "admin",
     "email": "admin@pos.com",
-    "full_name": "Administrator",
-    "role": "admin",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  },
-  {
-    "id": 2,
-    "username": "cashier1",
-    "email": "cashier@pos.com",
-    "full_name": "Cashier One",
-    "role": "cashier",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  }
-]
-```
-
-### 2.2 Get User by ID
-**GET** `/users/{id}`
-*Requires: Authentication*
-
-**Response (200 OK):**
-```json
-{
-  "id": 1,
-  "username": "john_doe",
-  "email": "john@example.com",
-  "full_name": "John Doe",
-  "role": "cashier",
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
+    "password": "admin123"
 }
 ```
 
-### 2.3 Update User
-**PUT** `/users/{id}`
-*Requires: Admin or Manager role*
-
-**Request Body:**
+**Response:**
 ```json
 {
-  "username": "john_updated",
-  "email": "john.updated@example.com",
-  "full_name": "John Doe Updated",
-  "role": "manager"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "User updated successfully",
-  "user": {
-    "id": 1,
-    "username": "john_updated",
-    "email": "john.updated@example.com",
-    "full_name": "John Doe Updated",
-    "role": "manager",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:01Z"
-  }
-}
-```
-
-### 2.4 Delete User
-**DELETE** `/users/{id}`
-*Requires: Admin role*
-
-**Response (200 OK):**
-```json
-{
-  "message": "User deleted successfully"
-}
-```
-
----
-
-## 3. Category Endpoints
-
-### 3.1 Get All Categories
-**GET** `/public/categories` or `/categories`
-
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "name": "Coffee",
-    "description": "Hot and cold coffee beverages",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  },
-  {
-    "id": 2,
-    "name": "Tea",
-    "description": "Various tea selections",
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  }
-]
-```
-
-### 3.2 Create Category
-**POST** `/categories`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Pastries",
-  "description": "Fresh baked goods and pastries"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 3,
-  "name": "Pastries",
-  "description": "Fresh baked goods and pastries",
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 3.3 Update Category
-**PUT** `/categories/{id}`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Baked Goods",
-  "description": "Fresh baked pastries and breads"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 3,
-  "name": "Baked Goods",
-  "description": "Fresh baked pastries and breads",
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:01Z"
-}
-```
-
-### 3.4 Delete Category
-**DELETE** `/categories/{id}`
-*Requires: Admin or Manager role*
-
-**Response (200 OK):**
-```json
-{
-  "message": "Category deleted successfully"
-}
-```
-
----
-
-## 4. Menu Item Endpoints
-
-### 4.1 Get All Menu Items
-**GET** `/public/menu/items` or `/menu/items`
-
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-- `category_id` (optional): Filter by category ID
-
-**Response (200 OK):**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "name": "Espresso",
-      "description": "Rich and bold espresso shot",
-      "category_id": 1,
-      "category": {
-        "id": 1,
-        "name": "Coffee",
-        "description": "Hot and cold coffee beverages"
-      },
-      "price": 25000,
-      "cogs": 8000,
-      "margin": 68.0,
-      "image_url": "",
-      "available": true,
-      "created_at": "2025-07-07T12:00:00Z",
-      "updated_at": "2025-07-07T12:00:00Z"
-    }
-  ],
-  "page": 1,
-  "limit": 10,
-  "total": 1
-}
-```
-
-### 4.2 Get Menu Item by ID
-**GET** `/menu/items/{id}`
-
-**Response (200 OK):**
-```json
-{
-  "id": 1,
-  "name": "Espresso",
-  "description": "Rich and bold espresso shot",
-  "category_id": 1,
-  "category": {
-    "id": 1,
-    "name": "Coffee",
-    "description": "Hot and cold coffee beverages"
-  },
-  "price": 25000,
-  "cogs": 8000,
-  "margin": 68.0,
-  "image_url": "",
-  "available": true,
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 4.3 Create Menu Item
-**POST** `/menu/items`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Cappuccino",
-  "description": "Espresso with steamed milk and foam",
-  "category_id": 1,
-  "price": 35000,
-  "cogs": 12000,
-  "image_url": "",
-  "available": true
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 2,
-  "name": "Cappuccino",
-  "description": "Espresso with steamed milk and foam",
-  "category_id": 1,
-  "category": {
-    "id": 1,
-    "name": "Coffee",
-    "description": "Hot and cold coffee beverages"
-  },
-  "price": 35000,
-  "cogs": 12000,
-  "margin": 65.71,
-  "image_url": "",
-  "available": true,
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 4.4 Update Menu Item
-**PUT** `/menu/items/{id}`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Large Cappuccino",
-  "description": "Double shot espresso with steamed milk and foam",
-  "category_id": 1,
-  "price": 45000,
-  "cogs": 15000,
-  "image_url": "",
-  "available": true
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 2,
-  "name": "Large Cappuccino",
-  "description": "Double shot espresso with steamed milk and foam",
-  "category_id": 1,
-  "category": {
-    "id": 1,
-    "name": "Coffee",
-    "description": "Hot and cold coffee beverages"
-  },
-  "price": 45000,
-  "cogs": 15000,
-  "margin": 66.67,
-  "image_url": "",
-  "available": true,
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:01Z"
-}
-```
-
-### 4.5 Delete Menu Item
-**DELETE** `/menu/items/{id}`
-*Requires: Admin or Manager role*
-
-**Response (200 OK):**
-```json
-{
-  "message": "Menu item deleted successfully"
-}
-```
-
----
-
-## 5. Add-on Endpoints
-
-### 5.1 Get All Add-ons
-**GET** `/public/add-ons` or `/add-ons`
-
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "name": "Extra Shot",
-    "description": "Additional espresso shot",
-    "price": 8000,
-    "cogs": 2000,
-    "margin": 75.0,
-    "available": true,
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  },
-  {
-    "id": 2,
-    "name": "Oat Milk",
-    "description": "Replace regular milk with oat milk",
-    "price": 5000,
-    "cogs": 2500,
-    "margin": 50.0,
-    "available": true,
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  }
-]
-```
-
-### 5.2 Create Add-on
-**POST** `/add-ons`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Almond Milk",
-  "description": "Replace regular milk with almond milk",
-  "price": 6000,
-  "cogs": 3000,
-  "available": true
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 3,
-  "name": "Almond Milk",
-  "description": "Replace regular milk with almond milk",
-  "price": 6000,
-  "cogs": 3000,
-  "margin": 50.0,
-  "available": true,
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 5.3 Update Add-on
-**PUT** `/add-ons/{id}`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "name": "Premium Almond Milk",
-  "description": "Organic almond milk substitute",
-  "price": 7000,
-  "cogs": 3500,
-  "available": true
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 3,
-  "name": "Premium Almond Milk",
-  "description": "Organic almond milk substitute",
-  "price": 7000,
-  "cogs": 3500,
-  "margin": 50.0,
-  "available": true,
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:01Z"
-}
-```
-
-### 5.4 Delete Add-on
-**DELETE** `/add-ons/{id}`
-*Requires: Admin or Manager role*
-
-**Response (200 OK):**
-```json
-{
-  "message": "Add-on deleted successfully"
-}
-```
-
----
-
-## 6. Transaction Endpoints
-
-### 6.1 Get All Transactions
-**GET** `/transactions`
-*Requires: Authentication*
-
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-- `status` (optional): Filter by status ("pending" or "paid")
-- `start_date` (optional): Start date filter (YYYY-MM-DD)
-- `end_date` (optional): End date filter (YYYY-MM-DD)
-
-**Response (200 OK):**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "user_id": 2,
-      "user": {
-        "id": 2,
-        "username": "cashier1",
-        "full_name": "Cashier One"
-      },
-      "status": "paid",
-      "payment_method": {
-        "id": 1,
-        "name": "Cash",
-        "code": "cash"
-      },
-      "total_amount": 43000,
-      "tax_amount": 4300,
-      "discount_amount": 0,
-      "final_amount": 47300,
-      "notes": "",
-      "transaction_items": [
-        {
-          "id": 1,
-          "menu_item": {
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
             "id": 1,
-            "name": "Espresso",
-            "price": 25000
-          },
-          "quantity": 1,
-          "price": 25000,
-          "total": 25000,
-          "add_ons": [
-            {
-              "id": 1,
-              "add_on": {
+            "username": "admin",
+            "email": "admin@pos.com",
+            "role": "admin",
+            "is_active": true
+        }
+    }
+}
+```
+
+## User Management
+
+### Get Profile
+```http
+GET /api/v1/profile
+Authorization: Bearer <token>
+```
+
+### Register User (Admin only)
+```http
+POST /api/v1/auth/register
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+    "username": "newuser",
+    "email": "newuser@pos.com",
+    "password": "password123",
+    "role": "cashier"
+}
+```
+
+## Menu Management
+
+### Get Categories
+```http
+GET /api/v1/menu/categories
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Coffee",
+            "description": "Hot and cold coffee beverages",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    ]
+}
+```
+
+### Create Category (Admin/Manager)
+```http
+POST /api/v1/menu/categories
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "name": "New Category",
+    "description": "Category description"
+}
+```
+
+### Get Menu Items
+```http
+GET /api/v1/menu/items?category_id=1&available=true
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 4,
+            "category_id": 1,
+            "name": "Latte",
+            "description": "Espresso with steamed milk",
+            "price": 28000,
+            "cogs": 14000,
+            "margin": 50.0,
+            "is_available": true,
+            "image_url": "",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "category": {
                 "id": 1,
-                "name": "Extra Shot",
-                "price": 8000
-              },
-              "quantity": 1,
-              "price": 8000,
-              "total": 8000
+                "name": "Coffee"
+            },
+            "add_ons": [
+                {
+                    "id": 17,
+                    "menu_item_id": 4,
+                    "name": "Double Shot for Latte",
+                    "description": "Double espresso shot specifically for lattes",
+                    "price": 8000,
+                    "cogs": 3000,
+                    "margin": 62.5,
+                    "is_available": true
+                },
+                {
+                    "id": 2,
+                    "menu_item_id": null,
+                    "name": "Whipped Cream",
+                    "description": "Fresh whipped cream",
+                    "price": 3000,
+                    "cogs": 1500,
+                    "margin": 50.0,
+                    "is_available": true
+                }
+            ]
+        }
+    ]
+}
+```
+
+**Note:** Menu items now include their associated add-ons (both menu-specific and global add-ons).
+
+### Create Menu Item (Admin/Manager)
+```http
+POST /api/v1/menu/items
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "category_id": 1,
+    "name": "New Coffee",
+    "description": "Delicious new coffee",
+    "price": 25000,
+    "cogs": 12000,
+    "is_available": true
+}
+```
+
+## Add-ons Management
+
+The system supports both **global add-ons** (available for all menu items) and **menu-specific add-ons** (only available for specific menu items).
+
+### Get All Add-ons
+```http
+GET /api/v1/add-ons?available=true&menu_item_id=4
+```
+
+**Query Parameters:**
+- `available` (boolean): Filter by availability status
+- `menu_item_id` (integer): Filter by specific menu item ID, or use "global" for global add-ons only
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "menu_item_id": null,
+            "name": "Extra Shot",
+            "description": "Additional espresso shot",
+            "price": 8000,
+            "cogs": 4000,
+            "margin": 50.0,
+            "is_available": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        },
+        {
+            "id": 17,
+            "menu_item_id": 4,
+            "name": "Double Shot for Latte",
+            "description": "Double espresso shot specifically for lattes",
+            "price": 8000,
+            "cogs": 3000,
+            "margin": 62.5,
+            "is_available": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "menu_item": {
+                "id": 4,
+                "name": "Latte",
+                "price": 28000
             }
-          ]
         }
-      ],
-      "created_at": "2025-07-07T12:00:00Z",
-      "updated_at": "2025-07-07T12:00:00Z"
-    }
-  ],
-  "page": 1,
-  "limit": 10,
-  "total": 1
+    ]
 }
 ```
 
-### 6.2 Get Transaction by ID
-**GET** `/transactions/{id}`
-*Requires: Authentication*
+### Get Add-ons for Specific Menu Item
+```http
+GET /api/v1/public/menu-item-add-ons/{menu_item_id}
+```
 
-**Response (200 OK):**
+Returns both global add-ons and menu-specific add-ons for the given menu item.
+
+**Response:**
 ```json
 {
-  "id": 1,
-  "user_id": 2,
-  "user": {
-    "id": 2,
-    "username": "cashier1",
-    "full_name": "Cashier One"
-  },
-  "status": "paid",
-  "payment_method": {
-    "id": 1,
-    "name": "Cash",
-    "code": "cash"
-  },
-  "total_amount": 43000,
-  "tax_amount": 4300,
-  "discount_amount": 0,
-  "final_amount": 47300,
-  "notes": "",
-  "transaction_items": [
-    {
-      "id": 1,
-      "menu_item": {
-        "id": 1,
-        "name": "Espresso",
-        "price": 25000
-      },
-      "quantity": 1,
-      "price": 25000,
-      "total": 25000,
-      "add_ons": [
+    "add_ons": [
         {
-          "id": 1,
-          "add_on": {
             "id": 1,
+            "menu_item_id": null,
             "name": "Extra Shot",
-            "price": 8000
-          },
-          "quantity": 1,
-          "price": 8000,
-          "total": 8000
-        }
-      ]
-    }
-  ],
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 6.3 Create Transaction (Save as Pending)
-**POST** `/transactions`
-*Requires: Authentication*
-
-**Request Body:**
-```json
-{
-  "items": [
-    {
-      "menu_item_id": 1,
-      "quantity": 2,
-      "add_ons": [
+            "description": "Additional espresso shot",
+            "price": 8000,
+            "cogs": 4000,
+            "margin": 50.0,
+            "is_available": true
+        },
         {
-          "add_on_id": 1,
-          "quantity": 1
+            "id": 17,
+            "menu_item_id": 4,
+            "name": "Double Shot for Latte",
+            "description": "Double espresso shot specifically for lattes",
+            "price": 8000,
+            "cogs": 3000,
+            "margin": 62.5,
+            "is_available": true
         }
-      ]
-    },
-    {
-      "menu_item_id": 2,
-      "quantity": 1,
-      "add_ons": []
+    ],
+    "menu_item": {
+        "id": 4,
+        "name": "Latte"
     }
-  ],
-  "discount_amount": 5000,
-  "notes": "Customer request: less sugar"
 }
 ```
 
-**Response (201 Created):**
+### Create Add-on (Admin/Manager)
+```http
+POST /api/v1/add-ons
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Global Add-on Example:**
 ```json
 {
-  "id": 2,
-  "user_id": 2,
-  "status": "pending",
-  "payment_method": null,
-  "total_amount": 85000,
-  "tax_amount": 8500,
-  "discount_amount": 5000,
-  "final_amount": 88500,
-  "notes": "Customer request: less sugar",
-  "transaction_items": [
-    {
-      "id": 2,
-      "menu_item": {
+    "name": "Oat Milk",
+    "description": "Premium oat milk substitute",
+    "price": 7000,
+    "cogs": 4000,
+    "is_available": true
+}
+```
+
+**Menu-Specific Add-on Example:**
+```json
+{
+    "menu_item_id": 4,
+    "name": "Latte Art",
+    "description": "Beautiful latte art design (only for lattes)",
+    "price": 5000,
+    "cogs": 0,
+    "is_available": true
+}
+```
+
+### Update Add-on (Admin/Manager)
+```http
+PUT /api/v1/add-ons/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "menu_item_id": 4,
+    "name": "Updated Add-on Name",
+    "description": "Updated description",
+    "price": 6000,
+    "cogs": 3000,
+    "is_available": true
+}
+```
+
+### Delete Add-on (Admin/Manager)
+```http
+DELETE /api/v1/add-ons/{id}
+Authorization: Bearer <token>
+```
+
+## Transactions
+
+### Customer Name Support
+The POS system now supports storing an optional customer name with each transaction. This field:
+- Is optional and can be left empty/null
+- Accepts any string value (customer's name)
+- Is stored with the transaction for future reference
+- Can be used for customer service, receipts, or analytics
+- Is included in both transaction creation and retrieval endpoints
+
+### Create Transaction
+```http
+POST /api/v1/transactions
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "customer_name": "John Doe",
+    "items": [
+        {
+            "menu_item_id": 1,
+            "quantity": 2,
+            "add_ons": [
+                {
+                    "add_on_id": 1,
+                    "quantity": 1
+                }
+            ]
+        }
+    ],
+    "payment_method": "cash",
+    "tax": 2500,
+    "discount": 0
+}
+```
+
+**Request Fields:**
+- `customer_name` (string, optional): Customer's name for this transaction
+- `items` (array, required): Array of menu items to purchase
+- `payment_method` (string, required): Payment method (cash, card, etc.)
+- `tax` (number, required): Tax amount in smallest currency unit
+- `discount` (number, required): Discount amount in smallest currency unit
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Transaction created successfully",
+    "data": {
         "id": 1,
-        "name": "Espresso",
-        "price": 25000
-      },
-      "quantity": 2,
-      "price": 25000,
-      "total": 50000,
-      "add_ons": [
+        "transaction_no": "TXN-20240101-0001",
+        "customer_name": "John Doe",
+        "status": "pending",
+        "payment_method": "cash",
+        "sub_total": 46000,
+        "tax": 2500,
+        "discount": 0,
+        "total": 48500,
+        "created_at": "2024-01-01T12:00:00Z",
+        "items": [
+            {
+                "id": 1,
+                "menu_item_id": 1,
+                "quantity": 2,
+                "unit_price": 15000,
+                "total_price": 30000,
+                "menu_item": {
+                    "id": 1,
+                    "name": "Espresso",
+                    "price": 15000
+                },
+                "add_ons": [
+                    {
+                        "id": 1,
+                        "add_on_id": 1,
+                        "quantity": 1,
+                        "unit_price": 8000,
+                        "total_price": 8000,
+                        "add_on": {
+                            "id": 1,
+                            "name": "Extra Shot",
+                            "price": 8000
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+### Process Payment
+```http
+PUT /api/v1/transactions/1/pay
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "payment_method": "cash"
+}
+```
+
+### Get Transactions
+```http
+GET /api/v1/transactions?status=paid&limit=10&offset=0
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
         {
-          "id": 2,
-          "add_on": {
             "id": 1,
-            "name": "Extra Shot",
-            "price": 8000
-          },
-          "quantity": 1,
-          "price": 8000,
-          "total": 8000
+            "transaction_no": "TXN-20240101-0001",
+            "customer_name": "John Doe",
+            "status": "paid",
+            "payment_method": "cash",
+            "sub_total": 46000,
+            "tax": 2500,
+            "discount": 0,
+            "total": 48500,
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:30:00Z",
+            "items": [
+                {
+                    "id": 1,
+                    "menu_item_id": 1,
+                    "quantity": 2,
+                    "unit_price": 15000,
+                    "total_price": 30000,
+                    "menu_item": {
+                        "id": 1,
+                        "name": "Espresso",
+                        "price": 15000
+                    },
+                    "add_ons": [
+                        {
+                            "id": 1,
+                            "add_on_id": 1,
+                            "quantity": 1,
+                            "unit_price": 8000,
+                            "total_price": 8000,
+                            "add_on": {
+                                "id": 1,
+                                "name": "Extra Shot",
+                                "price": 8000
+                            }
+                        }
+                    ]
+                }
+            ]
         }
-      ]
+    ],
+    "pagination": {
+        "current_page": 1,
+        "per_page": 10,
+        "total": 42,
+        "total_pages": 5
     }
-  ],
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
 }
 ```
 
-### 6.4 Pay Transaction (Create and Pay Immediately)
-**POST** `/transactions/pay`
-*Requires: Authentication*
+### Delete Transaction (Admin/Manager)
+```http
+DELETE /api/v1/transactions/:id
+Authorization: Bearer <token>
+```
 
-**Request Body:**
+**Notes:**
+- Pending transactions can be deleted by any authenticated user
+- Paid transactions can only be deleted by admin users
+- Deletes all related transaction items and add-ons
+
+**Response (Success):**
 ```json
 {
-  "items": [
-    {
-      "menu_item_id": 1,
-      "quantity": 1,
-      "add_ons": [
-        {
-          "add_on_id": 1,
-          "quantity": 1
-        }
-      ]
-    }
-  ],
-  "payment_method": "cash",
-  "discount_amount": 0,
-  "notes": ""
+    "message": "Transaction deleted successfully"
 }
 ```
 
-**Response (201 Created):**
+**Response (Error - Insufficient Permissions):**
 ```json
 {
-  "id": 3,
-  "user_id": 2,
-  "status": "paid",
-  "payment_method": {
-    "id": 1,
-    "name": "Cash",
-    "code": "cash"
-  },
-  "total_amount": 33000,
-  "tax_amount": 3300,
-  "discount_amount": 0,
-  "final_amount": 36300,
-  "notes": "",
-  "transaction_items": [
-    {
-      "id": 3,
-      "menu_item": {
-        "id": 1,
-        "name": "Espresso",
-        "price": 25000
-      },
-      "quantity": 1,
-      "price": 25000,
-      "total": 25000,
-      "add_ons": [
+    "error": "Only admin can delete paid transactions"
+}
+```
+
+**Response (Error - Not Found):**
+```json
+{
+    "error": "Transaction not found"
+}
+```
+
+## Expenses
+
+### Get Expenses
+```http
+GET /api/v1/expenses?type=raw_material&start_date=2024-01-01&end_date=2024-01-31
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
         {
-          "id": 3,
-          "add_on": {
             "id": 1,
-            "name": "Extra Shot",
-            "price": 8000
-          },
-          "quantity": 1,
-          "price": 8000,
-          "total": 8000
+            "type": "raw_material",
+            "category": "Coffee Beans",
+            "description": "Premium Arabica coffee beans - 5kg",
+            "amount": 500000,
+            "date": "2024-01-01T00:00:00Z",
+            "user_id": 1,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "user": {
+                "id": 1,
+                "username": "admin",
+                "role": "admin"
+            }
         }
-      ]
+    ]
+}
+```
+
+### Create Expense (Admin/Manager)
+```http
+POST /api/v1/expenses
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "type": "operational",
+    "category": "Utilities",
+    "description": "Monthly electricity bill",
+    "amount": 800000,
+    "date": "2024-01-01T00:00:00Z"
+}
+```
+
+## Dashboard Analytics
+
+### Get Dashboard Stats
+```http
+GET /api/v1/dashboard/stats?period=monthly
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "total_sales": 5250000,
+        "total_transactions": 142,
+        "total_expenses": 2100000,
+        "profit": 3150000,
+        "profit_margin": 60.0,
+        "top_selling_items": [
+            {
+                "menu_item": {
+                    "id": 1,
+                    "name": "Espresso",
+                    "price": 15000
+                },
+                "total_quantity": 45,
+                "total_revenue": 675000
+            }
+        ],
+        "sales_chart": [
+            {
+                "date": "2024-01-01",
+                "sales": 125000,
+                "transactions": 8
+            }
+        ],
+        "expense_breakdown": [
+            {
+                "category": "Raw Materials",
+                "amount": 1200000,
+                "percentage": 57.14
+            }
+        ]
     }
-  ],
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
 }
 ```
 
-### 6.5 Mark Transaction as Paid
-**PUT** `/transactions/{id}/pay`
-*Requires: Authentication*
+## Payment Methods
 
-**Request Body:**
+### Get Payment Methods
+```http
+GET /api/v1/payment-methods
+```
+
+**Response:**
 ```json
 {
-  "payment_method": "card"
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Cash",
+            "code": "cash",
+            "is_active": true
+        },
+        {
+            "id": 2,
+            "name": "Credit Card",
+            "code": "card",
+            "is_active": true
+        },
+        {
+            "id": 3,
+            "name": "Digital Wallet",
+            "code": "digital_wallet",
+            "is_active": true
+        }
+    ]
 }
 ```
-
-**Response (200 OK):**
-```json
-{
-  "message": "Transaction marked as paid successfully",
-  "transaction": {
-    "id": 2,
-    "user_id": 2,
-    "status": "paid",
-    "payment_method": {
-      "id": 2,
-      "name": "Credit Card",
-      "code": "card"
-    },
-    "total_amount": 85000,
-    "tax_amount": 8500,
-    "discount_amount": 5000,
-    "final_amount": 88500,
-    "notes": "Customer request: less sugar",
-    "updated_at": "2025-07-07T12:00:01Z"
-  }
-}
-```
-
----
-
-## 7. Payment Method Endpoints
-
-### 7.1 Get All Payment Methods
-**GET** `/public/payment-methods` or `/payment-methods`
-
-**Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "name": "Cash",
-    "code": "cash",
-    "active": true,
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  },
-  {
-    "id": 2,
-    "name": "Credit Card",
-    "code": "card",
-    "active": true,
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  },
-  {
-    "id": 3,
-    "name": "Digital Wallet",
-    "code": "digital_wallet",
-    "active": true,
-    "created_at": "2025-07-07T12:00:00Z",
-    "updated_at": "2025-07-07T12:00:00Z"
-  }
-]
-```
-
----
-
-## 8. Expense Endpoints
-
-### 8.1 Get All Expenses
-**GET** `/expenses`
-*Requires: Admin or Manager role*
-
-**Query Parameters:**
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-- `type` (optional): Filter by type ("raw_material" or "operational")
-- `start_date` (optional): Start date filter (YYYY-MM-DD)
-- `end_date` (optional): End date filter (YYYY-MM-DD)
-
-**Response (200 OK):**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "type": "raw_material",
-      "category": "Coffee Beans",
-      "description": "Premium Arabica coffee beans - 5kg",
-      "amount": 250000,
-      "date": "2025-07-07",
-      "receipt_number": "RCP-001",
-      "supplier": "Local Coffee Supplier",
-      "notes": "High quality beans for espresso",
-      "created_at": "2025-07-07T12:00:00Z",
-      "updated_at": "2025-07-07T12:00:00Z"
-    },
-    {
-      "id": 2,
-      "type": "operational",
-      "category": "Utilities",
-      "description": "Monthly electricity bill",
-      "amount": 150000,
-      "date": "2025-07-01",
-      "receipt_number": "ELC-202507",
-      "supplier": "PLN",
-      "notes": "July 2025 electricity",
-      "created_at": "2025-07-07T12:00:00Z",
-      "updated_at": "2025-07-07T12:00:00Z"
-    }
-  ],
-  "page": 1,
-  "limit": 10,
-  "total": 2
-}
-```
-
-### 8.2 Create Expense
-**POST** `/expenses`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "type": "raw_material",
-  "category": "Milk",
-  "description": "Fresh milk for beverages - 20L",
-  "amount": 80000,
-  "date": "2025-07-07",
-  "receipt_number": "MLK-001",
-  "supplier": "Dairy Farm Co.",
-  "notes": "Weekly milk supply"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "id": 3,
-  "type": "raw_material",
-  "category": "Milk",
-  "description": "Fresh milk for beverages - 20L",
-  "amount": 80000,
-  "date": "2025-07-07",
-  "receipt_number": "MLK-001",
-  "supplier": "Dairy Farm Co.",
-  "notes": "Weekly milk supply",
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:00Z"
-}
-```
-
-### 8.3 Update Expense
-**PUT** `/expenses/{id}`
-*Requires: Admin or Manager role*
-
-**Request Body:**
-```json
-{
-  "type": "raw_material",
-  "category": "Milk",
-  "description": "Fresh organic milk for beverages - 20L",
-  "amount": 95000,
-  "date": "2025-07-07",
-  "receipt_number": "MLK-001-REV",
-  "supplier": "Organic Dairy Farm Co.",
-  "notes": "Weekly organic milk supply"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "id": 3,
-  "type": "raw_material",
-  "category": "Milk",
-  "description": "Fresh organic milk for beverages - 20L",
-  "amount": 95000,
-  "date": "2025-07-07",
-  "receipt_number": "MLK-001-REV",
-  "supplier": "Organic Dairy Farm Co.",
-  "notes": "Weekly organic milk supply",
-  "created_at": "2025-07-07T12:00:00Z",
-  "updated_at": "2025-07-07T12:00:01Z"
-}
-```
-
-### 8.4 Delete Expense
-**DELETE** `/expenses/{id}`
-*Requires: Admin or Manager role*
-
-**Response (200 OK):**
-```json
-{
-  "message": "Expense deleted successfully"
-}
-```
-
----
-
-## 9. Dashboard Analytics Endpoints
-
-### 9.1 Get Dashboard Statistics
-**GET** `/dashboard/stats`
-*Requires: Authentication*
-
-**Query Parameters:**
-- `start_date` (optional): Start date filter (YYYY-MM-DD)
-- `end_date` (optional): End date filter (YYYY-MM-DD)
-
-**Response (200 OK):**
-```json
-{
-  "today_sales": 450000,
-  "today_transactions": 25,
-  "avg_order_value": 18000,
-  "total_expenses": 180000,
-  "sales_growth": 15.5,
-  "transaction_growth": 8,
-  "avg_order_growth": 12.3,
-  "top_menu_items": [
-    {
-      "name": "Espresso",
-      "total_quantity": 45,
-      "total_revenue": 1125000
-    },
-    {
-      "name": "Cappuccino",
-      "total_quantity": 32,
-      "total_revenue": 1120000
-    }
-  ],
-  "top_add_ons": [
-    {
-      "name": "Extra Shot",
-      "total_quantity": 28,
-      "total_revenue": 224000
-    },
-    {
-      "name": "Oat Milk",
-      "total_quantity": 15,
-      "total_revenue": 75000
-    }
-  ],
-  "sales_chart_data": [
-    {
-      "date": "2025-07-01",
-      "sales": 380000,
-      "transactions": 21
-    },
-    {
-      "date": "2025-07-02",
-      "sales": 420000,
-      "transactions": 24
-    }
-  ],
-  "expense_chart_data": [
-    {
-      "date": "2025-07-01",
-      "raw_material": 150000,
-      "operational": 80000
-    },
-    {
-      "date": "2025-07-02",
-      "raw_material": 120000,
-      "operational": 75000
-    }
-  ]
-}
-```
-
----
-
-## 10. Health Check Endpoint
-
-### 10.1 Health Check
-**GET** `/health`
-
-**Response (200 OK):**
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-07-07T12:00:00Z",
-  "version": "1.0.0",
-  "database": "connected"
-}
-```
-
----
 
 ## Error Responses
 
-### Common Error Formats
+All endpoints return errors in the following format:
 
-**400 Bad Request:**
 ```json
 {
-  "error": "Invalid request format",
-  "details": "Missing required field: name"
+    "success": false,
+    "message": "Error description",
+    "error": "Detailed error information"
 }
 ```
 
-**401 Unauthorized:**
+### Common HTTP Status Codes
+
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `403` - Forbidden
+- `404` - Not Found
+- `422` - Validation Error
+- `500` - Internal Server Error
+
+## Rate Limiting
+
+The API implements basic rate limiting to prevent abuse. If you exceed the rate limit, you'll receive a `429 Too Many Requests` response.
+
+## CORS
+
+The API supports Cross-Origin Resource Sharing (CORS) for web applications. All origins are allowed in development mode.
+
+## Database Schema Changes
+
+### Add-ons Table Enhancement
+The `add_ons` table now includes:
+- `menu_item_id` (nullable): Links add-on to specific menu item
+- Foreign key constraint to `menu_items` table
+- Index on `menu_item_id` for performance
+
+```sql
+-- Migration: 005_add_menu_item_id_to_addons.sql
+ALTER TABLE add_ons ADD COLUMN menu_item_id INTEGER REFERENCES menu_items(id);
+CREATE INDEX idx_add_ons_menu_item_id ON add_ons(menu_item_id);
+```
+
+### Data Model Examples
+
+**Global Add-on:**
 ```json
 {
-  "error": "Authentication required"
+    "id": 2,
+    "menu_item_id": null,
+    "name": "Whipped Cream",
+    "price": 3000,
+    "cogs": 1500
 }
 ```
 
-**403 Forbidden:**
+**Menu-Specific Add-on:**
 ```json
 {
-  "error": "Insufficient permissions",
-  "required_role": "admin"
-}
-```
-
-**404 Not Found:**
-```json
-{
-  "error": "Resource not found",
-  "resource": "menu_item",
-  "id": 999
-}
-```
-
-**422 Unprocessable Entity:**
-```json
-{
-  "error": "Validation failed",
-  "fields": {
-    "email": "Invalid email format",
-    "password": "Password must be at least 6 characters"
-  }
-}
-```
-
-**500 Internal Server Error:**
-```json
-{
-  "error": "Internal server error",
-  "message": "Something went wrong"
-}
-```
-
----
-
-## cURL Examples
-
-Below are practical cURL command examples for testing all API endpoints:
-
-### Authentication Examples
-
-#### Register a new user
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "password123",
-    "full_name": "Test User",
-    "role": "cashier"
-  }'
-```
-
-#### Login
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "password123"
-  }'
-```
-
-*Save the token from login response for subsequent requests*
-
-### User Management Examples
-
-#### Get all users (Admin/Manager only)
-```bash
-curl -X GET http://localhost:8080/api/v1/users \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Get user by ID
-```bash
-curl -X GET http://localhost:8080/api/v1/users/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Update user (Admin/Manager only)
-```bash
-curl -X PUT http://localhost:8080/api/v1/users/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "updated_user",
-    "email": "updated@example.com",
-    "full_name": "Updated User",
-    "role": "manager"
-  }'
-```
-
-#### Delete user (Admin only)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/users/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Category Examples
-
-#### Get all categories (Public)
-```bash
-curl -X GET http://localhost:8080/api/v1/public/menu/categories
-```
-
-#### Create category (Admin/Manager only)
-```bash
-curl -X POST http://localhost:8080/api/v1/menu/categories \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Beverages",
-    "description": "Hot and cold beverages"
-  }'
-```
-
-#### Update category (Admin/Manager only)
-```bash
-curl -X PUT http://localhost:8080/api/v1/categories/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Hot Beverages",
-    "description": "Hot coffee and tea selections"
-  }'
-```
-
-#### Delete category (Admin/Manager only)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/categories/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Menu Item Examples
-
-#### Get all menu items (Public)
-```bash
-curl -X GET http://localhost:8080/api/v1/public/menu/items
-```
-
-#### Get menu items with pagination and filters
-```bash
-curl -X GET "http://localhost:8080/api/v1/public/menu/items?page=1&limit=5&category_id=1"
-```
-
-#### Get menu item by ID
-```bash
-curl -X GET http://localhost:8080/api/v1/menu/items/1
-```
-
-#### Create menu item (Admin/Manager only)
-```bash
-curl -X POST http://localhost:8080/api/v1/menu/items \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Americano",
-    "description": "Espresso with hot water",
-    "category_id": 1,
-    "price": 30000,
-    "cogs": 10000,
-    "image_url": "",
-    "available": true
-  }'
-```
-
-#### Update menu item (Admin/Manager only)
-```bash
-curl -X PUT http://localhost:8080/api/v1/menu/items/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Large Americano",
-    "description": "Double shot espresso with hot water",
-    "category_id": 1,
-    "price": 40000,
-    "cogs": 15000,
-    "image_url": "",
-    "available": true
-  }'
-```
-
-#### Delete menu item (Admin/Manager only)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/menu/items/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Add-on Examples
-
-#### Get all add-ons (Public)
-```bash
-curl -X GET http://localhost:8080/api/v1/public/add-ons
-```
-
-#### Create add-on (Admin/Manager only)
-```bash
-curl -X POST http://localhost:8080/api/v1/add-ons \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Vanilla Syrup",
-    "description": "Sweet vanilla flavoring",
-    "price": 5000,
-    "cogs": 1500,
-    "available": true
-  }'
-```
-
-#### Update add-on (Admin/Manager only)
-```bash
-curl -X PUT http://localhost:8080/api/v1/add-ons/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Premium Vanilla Syrup",
-    "description": "High-quality vanilla flavoring",
-    "price": 6000,
-    "cogs": 2000,
-    "available": true
-  }'
-```
-
-#### Delete add-on (Admin/Manager only)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/add-ons/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Transaction Examples
-
-#### Get all transactions
-```bash
-curl -X GET http://localhost:8080/api/v1/transactions \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Get transactions with filters
-```bash
-curl -X GET "http://localhost:8080/api/v1/transactions?status=paid&start_date=2025-07-01&end_date=2025-07-07&page=1&limit=10" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Get transaction by ID
-```bash
-curl -X GET http://localhost:8080/api/v1/transactions/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Create transaction (save as pending)
-```bash
-curl -X POST http://localhost:8080/api/v1/transactions \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "menu_item_id": 1,
-        "quantity": 2,
-        "add_ons": [
-          {
-            "add_on_id": 1,
-            "quantity": 1
-          }
-        ]
-      },
-      {
-        "menu_item_id": 2,
-        "quantity": 1,
-        "add_ons": []
-      }
-    ],
-    "discount_amount": 5000,
-    "notes": "Customer special request"
-  }'
-```
-
-#### Create and pay transaction immediately
-```bash
-curl -X POST http://localhost:8080/api/v1/transactions/pay \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "menu_item_id": 1,
-        "quantity": 1,
-        "add_ons": [
-          {
-            "add_on_id": 1,
-            "quantity": 1
-          }
-        ]
-      }
-    ],
-    "payment_method": "cash",
-    "discount_amount": 0,
-    "notes": ""
-  }'
-```
-
-#### Mark existing transaction as paid
-```bash
-curl -X PUT http://localhost:8080/api/v1/transactions/1/pay \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payment_method": "card"
-  }'
-```
-
-### Payment Method Examples
-
-#### Get all payment methods (Public)
-```bash
-curl -X GET http://localhost:8080/api/v1/public/payment-methods
-```
-
-### Expense Examples
-
-#### Get all expenses (Admin/Manager only)
-```bash
-curl -X GET http://localhost:8080/api/v1/expenses \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Get expenses with filters
-```bash
-curl -X GET "http://localhost:8080/api/v1/expenses?type=raw_material&start_date=2025-07-01&end_date=2025-07-07&page=1&limit=10" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Create expense (Admin/Manager only)
-```bash
-curl -X POST http://localhost:8080/api/v1/expenses \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "raw_material",
-    "category": "Coffee Beans",
-    "description": "Premium Colombian beans - 2kg",
-    "amount": 180000,
-    "date": "2025-07-07",
-    "receipt_number": "CB-001",
-    "supplier": "Coffee Import Co.",
-    "notes": "For espresso blend"
-  }'
-```
-
-#### Update expense (Admin/Manager only)
-```bash
-curl -X PUT http://localhost:8080/api/v1/expenses/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "raw_material",
-    "category": "Coffee Beans",
-    "description": "Premium Colombian beans - 2.5kg",
-    "amount": 200000,
-    "date": "2025-07-07",
-    "receipt_number": "CB-001-REV",
-    "supplier": "Coffee Import Co.",
-    "notes": "Updated quantity for espresso blend"
-  }'
-```
-
-#### Delete expense (Admin/Manager only)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/expenses/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Dashboard Examples
-
-#### Get dashboard statistics
-```bash
-curl -X GET http://localhost:8080/api/v1/dashboard/stats \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-#### Get dashboard statistics with date filter
-```bash
-curl -X GET "http://localhost:8080/api/v1/dashboard/stats?start_date=2025-07-01&end_date=2025-07-07" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Health Check
-
-#### Check API health
-```bash
-curl -X GET http://localhost:8080/api/v1/health
-```
-
----
-
-## Complete Workflow Examples
-
-### 1. Complete User Registration and Login Flow
-```bash
-# 1. Register a new user
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "cashier_demo",
-    "email": "cashier@demo.com",
-    "password": "demo123",
-    "full_name": "Demo Cashier",
-    "role": "cashier"
-  }'
-
-# 2. Login to get JWT token
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "cashier_demo",
-    "password": "demo123"
-  }' | jq -r '.token')
-
-echo "Token: $TOKEN"
-```
-
-### 2. Complete Menu Setup Flow
-```bash
-# Assuming you have admin token
-ADMIN_TOKEN="your_admin_jwt_token"
-
-# 1. Create category
-CATEGORY_ID=$(curl -s -X POST http://localhost:8080/api/v1/categories \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Coffee",
-    "description": "Coffee beverages"
-  }' | jq -r '.id')
-
-# 2. Create menu item
-ITEM_ID=$(curl -s -X POST http://localhost:8080/api/v1/menu/items \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Latte",
-    "description": "Espresso with steamed milk",
-    "category_id": '$CATEGORY_ID',
-    "price": 40000,
-    "cogs": 15000,
-    "available": true
-  }' | jq -r '.id')
-
-# 3. Create add-on
-ADDON_ID=$(curl -s -X POST http://localhost:8080/api/v1/add-ons \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Extra Shot",
-    "description": "Additional espresso shot",
+    "id": 17,
+    "menu_item_id": 4,
+    "name": "Double Shot for Latte",
     "price": 8000,
-    "cogs": 2500,
-    "available": true
-  }' | jq -r '.id')
-
-echo "Created Category ID: $CATEGORY_ID, Item ID: $ITEM_ID, Add-on ID: $ADDON_ID"
+    "cogs": 3000
+}
 ```
 
-### 3. Complete Transaction Flow
+### Migration from Old System
+Existing add-ons remain unchanged as global add-ons (`menu_item_id: null`). The system is fully backward compatible:
+
+1. **Existing Global Add-ons**: Continue to work for all menu items
+2. **New Menu-Specific Add-ons**: Can be created for targeted offerings
+3. **API Compatibility**: Old endpoints continue to work as before
+4. **UI Enhancement**: Admin interface now shows add-on types with visual indicators
+
+### Best Practices
+- Use **global add-ons** for universal options (milk alternatives, sweeteners, temperature preferences)
+- Use **menu-specific add-ons** for specialized options (latte art for lattes, extra foam for cappuccinos)
+- Consider customer experience when choosing between global vs. specific add-ons
+
+## Testing
+
+You can test the API using tools like:
+- **Postman**: Import the collection from `docs/postman/`
+- **cURL**: Use the examples above
+- **Insomnia**: REST client alternative to Postman
+
+### Testing Menu-Dependent Add-ons
+
+**Test 1: Get add-ons for a specific menu item**
 ```bash
-# Using cashier token
-CASHIER_TOKEN="your_cashier_jwt_token"
-
-# 1. Create pending transaction
-TRANSACTION_ID=$(curl -s -X POST http://localhost:8080/api/v1/transactions \
-  -H "Authorization: Bearer $CASHIER_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "menu_item_id": 1,
-        "quantity": 2,
-        "add_ons": [
-          {
-            "add_on_id": 1,
-            "quantity": 1
-          }
-        ]
-      }
-    ],
-    "discount_amount": 0,
-    "notes": "Test order"
-  }' | jq -r '.id')
-
-# 2. Mark transaction as paid
-curl -X PUT http://localhost:8080/api/v1/transactions/$TRANSACTION_ID/pay \
-  -H "Authorization: Bearer $CASHIER_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payment_method": "cash"
-  }'
-
-echo "Created and paid Transaction ID: $TRANSACTION_ID"
+curl -X GET "http://localhost:8080/api/v1/public/menu-item-add-ons/4"
 ```
 
-### 4. Direct Payment Flow (Create and Pay Immediately)
+**Test 2: Create a menu-specific add-on**
 ```bash
-# Create and pay transaction in one step
-curl -X POST http://localhost:8080/api/v1/transactions/pay \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+curl -X POST "http://localhost:8080/api/v1/add-ons" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "items": [
-      {
-        "menu_item_id": 1,
-        "quantity": 1,
-        "add_ons": []
-      }
-    ],
-    "payment_method": "card",
-    "discount_amount": 5000,
-    "notes": "Quick sale"
+    "menu_item_id": 4,
+    "name": "Extra Foam for Latte",
+    "description": "Additional milk foam specifically for lattes",
+    "price": 3000,
+    "cogs": 1000,
+    "is_available": true
   }'
 ```
 
----
+**Test 3: Filter add-ons by menu item**
+```bash
+curl -X GET "http://localhost:8080/api/v1/add-ons?menu_item_id=4"
+```
 
-## Testing Tips
+**Test 4: Get only global add-ons**
+```bash
+curl -X GET "http://localhost:8080/api/v1/add-ons?menu_item_id=global"
+```
 
-1. **Save JWT Token**: After login, save the token to a variable for easier testing:
-   ```bash
-   TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"username":"admin","password":"admin123"}' | jq -r '.token')
-   ```
+**Test 5: Get menu items with their add-ons**
+```bash
+curl -X GET "http://localhost:8080/api/v1/public/menu/items?category_id=1"
+```
 
-2. **Use Pretty JSON**: Add `| jq` to format JSON responses:
-   ```bash
-   curl -X GET http://localhost:8080/api/v1/users \
-     -H "Authorization: Bearer $TOKEN" | jq
-   ```
+## Changelog
 
-3. **Check HTTP Status**: Add `-w "%{http_code}"` to see response status:
-   ```bash
-   curl -w "%{http_code}" -X GET http://localhost:8080/api/v1/health
-   ```
+### Version 2.0 - Menu-Dependent Add-ons (July 2025)
 
-4. **Verbose Output**: Use `-v` flag for detailed request/response info:
-   ```bash
-   curl -v -X GET http://localhost:8080/api/v1/health
-   ```
+**New Features:**
+- ✅ Menu-specific add-ons functionality
+- ✅ Global vs. specific add-on categorization
+- ✅ Enhanced menu items API with associated add-ons
+- ✅ New endpoint: `GET /api/v1/public/menu-item-add-ons/{menu_item_id}`
+- ✅ Enhanced filtering: `?menu_item_id=4` and `?menu_item_id=global`
+- ✅ Backward compatibility with existing add-ons
 
-5. **Save Response**: Save response to file for inspection:
-   ```bash
-   curl -X GET http://localhost:8080/api/v1/transactions \
-     -H "Authorization: Bearer $TOKEN" -o transactions.json
-   ```
+**Database Changes:**
+- ✅ Added `menu_item_id` column to `add_ons` table
+- ✅ Added foreign key constraint and index
+- ✅ Migration: `005_add_menu_item_id_to_addons.sql`
+
+**API Enhancements:**
+- ✅ Enhanced add-on creation with menu item linking
+- ✅ Smart add-on filtering and retrieval
+- ✅ Improved response formats with relationship data
+- ✅ Better margin calculations and cost analysis
+
+**UI Improvements:**
+- ✅ Enhanced admin add-ons management page
+- ✅ Visual indicators for global vs. specific add-ons
+- ✅ Advanced filtering in admin interface
+- ✅ Improved POS system with contextual add-on selection
 
 ---

@@ -18,6 +18,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int? selectedCategory;
+  MenuItem? _selectedMenuItem;
+  String _addOnFilter = 'all';
 
   @override
   void initState() {
@@ -243,8 +245,17 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       itemBuilder: (context, index) {
         final item = filteredItems[index];
         return CustomCard(
-          child: ListTile(
-            leading: item.imageUrl != null
+          child: Container(
+            decoration: BoxDecoration(
+              border: _selectedMenuItem?.id == item.id
+                  ? Border.all(color: Theme.of(context).primaryColor, width: 2)
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              selected: _selectedMenuItem?.id == item.id,
+              onTap: () => _selectMenuItem(item),
+              leading: item.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: CachedNetworkImage(
@@ -344,6 +355,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                 }
               },
             ),
+            ),
           ),
         );
       },
@@ -374,20 +386,84 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   bottom: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    'Add-ons',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Add-ons',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddOnDialog(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Global Add-on'),
+                          ),
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: _selectedMenuItem == null 
+                                ? 'Select a menu item from "Categories & Items" tab first'
+                                : 'Add add-on specific to ${_selectedMenuItem!.name}',
+                            child: ElevatedButton.icon(
+                              onPressed: _selectedMenuItem != null 
+                                  ? () => _showAddOnDialog(menuItemId: _selectedMenuItem!.id)
+                                  : null,
+                              icon: const Icon(Icons.add_box),
+                              label: const Text('Add Menu-Specific'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddOnDialog(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Add-on'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _addOnFilter,
+                          decoration: const InputDecoration(
+                            labelText: 'Filter Add-ons',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('All Add-ons')),
+                            DropdownMenuItem(value: 'global', child: Text('Global Add-ons')),
+                            DropdownMenuItem(value: 'menu-specific', child: Text('Menu-Specific Add-ons')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _addOnFilter = value ?? 'all';
+                            });
+                          },
+                        ),
+                      ),
+                      if (_selectedMenuItem != null) ...[
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            'Selected: ${_selectedMenuItem!.name}',
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -402,19 +478,43 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   }
 
   Widget _buildAddOnsList(MenuProvider menuProvider) {
-    if (menuProvider.addOns.isEmpty) {
-      return const EmptyStateWidget(
+    // Filter add-ons based on selected filter
+    List<AddOn> filteredAddOns = menuProvider.addOns.where((addOn) {
+      switch (_addOnFilter) {
+        case 'global':
+          return addOn.menuItemId == null;
+        case 'menu-specific':
+          return addOn.menuItemId != null;
+        default:
+          return true; // 'all'
+      }
+    }).toList();
+
+    if (filteredAddOns.isEmpty) {
+      String emptyMessage;
+      switch (_addOnFilter) {
+        case 'global':
+          emptyMessage = 'No global add-ons available';
+          break;
+        case 'menu-specific':
+          emptyMessage = 'No menu-specific add-ons available';
+          break;
+        default:
+          emptyMessage = 'No add-ons available';
+      }
+      
+      return EmptyStateWidget(
         icon: Icons.extension,
-        message: 'No add-ons available',
+        message: emptyMessage,
         actionText: 'Add Add-on',
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: menuProvider.addOns.length,
+      itemCount: filteredAddOns.length,
       itemBuilder: (context, index) {
-        final addOn = menuProvider.addOns[index];
+        final addOn = filteredAddOns[index];
         return CustomCard(
           child: ListTile(
             title: Text(
@@ -424,9 +524,10 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (addOn.description?.isNotEmpty == true)
+                if (addOn.description?.isNotEmpty == true) ...[
                   Text(addOn.description!),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
+                ],
                 Row(
                   children: [
                     PriceTag(price: AppFormatters.formatCurrency(addOn.price)),
@@ -435,8 +536,52 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                       label: addOn.isAvailable ? 'Available' : 'Unavailable',
                       color: addOn.isAvailable ? Colors.green : Colors.red,
                     ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: addOn.menuItemId == null 
+                            ? Colors.blue.withOpacity(0.1)
+                            : Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: addOn.menuItemId == null 
+                              ? Colors.blue.withOpacity(0.3)
+                              : Colors.orange.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        addOn.menuItemId == null ? 'Global' : 'Menu-Specific',
+                        style: TextStyle(
+                          color: addOn.menuItemId == null 
+                              ? Colors.blue[700]
+                              : Colors.orange[700],
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
+                if (addOn.menuItemId != null) ...[
+                  const SizedBox(height: 4),
+                  FutureBuilder<MenuItem?>(
+                    future: _getMenuItemById(addOn.menuItemId!),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return Text(
+                          'For: ${snapshot.data!.name}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ],
             ),
             trailing: PopupMenuButton(
@@ -670,7 +815,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     );
   }
 
-  void _showAddOnDialog({AddOn? addOn}) {
+  void _showAddOnDialog({AddOn? addOn, int? menuItemId}) {
     final nameController = TextEditingController(text: addOn?.name ?? '');
     final descriptionController = TextEditingController(text: addOn?.description ?? '');
     final priceController = TextEditingController(text: addOn?.price.toString() ?? '');
@@ -678,10 +823,31 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(addOn == null ? 'Add Add-on' : 'Edit Add-on'),
+        title: Text(addOn == null 
+            ? (menuItemId != null ? 'Add Menu-Specific Add-on' : 'Add Global Add-on')
+            : 'Edit Add-on'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (menuItemId != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Text(
+                  'This add-on will be specific to: ${_selectedMenuItem?.name ?? "Selected menu item"}',
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
@@ -731,6 +897,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   name: nameController.text.trim(),
                   description: descriptionController.text.trim(),
                   price: price,
+                  menuItemId: menuItemId,
                 );
               } else {
                 await menuProvider.updateAddOn(
@@ -864,5 +1031,25 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       addOn.price,
       !addOn.isAvailable,
     );
+  }
+
+  Future<MenuItem?> _getMenuItemById(int menuItemId) async {
+    final menuProvider = context.read<MenuProvider>();
+    return menuProvider.menuItems.firstWhere(
+      (item) => item.id == menuItemId,
+      orElse: () => throw StateError('Menu item not found'),
+    );
+  }
+
+  void _selectMenuItem(MenuItem? menuItem) {
+    debugPrint('Selecting menu item: ${menuItem?.name ?? 'null'}');
+    setState(() {
+      _selectedMenuItem = menuItem;
+    });
+    
+    // Load add-ons for the selected menu item
+    if (menuItem != null) {
+      context.read<MenuProvider>().loadMenuItemAddOns(menuItem.id);
+    }
   }
 }

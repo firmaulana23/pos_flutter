@@ -142,21 +142,32 @@ class TransactionProvider with ChangeNotifier {
 
   Future<bool> deleteTransaction(int transactionId) async {
     try {
+      print('TransactionProvider: Starting delete operation for transaction $transactionId');
       _setLoading(true);
       _setError(null);
 
       await ApiService.deleteTransaction(transactionId);
 
-      // Remove from the list
+      // Remove from the list and notify immediately
+      final initialCount = _transactions.length;
       _transactions.removeWhere((t) => t.id == transactionId);
+      final finalCount = _transactions.length;
+      
+      print('TransactionProvider: Deleted transaction $transactionId. Count changed from $initialCount to $finalCount');
+      
+      // Force notify listeners before setting loading to false
       notifyListeners();
 
       return true;
     } catch (e) {
+      print('TransactionProvider: Error deleting transaction: $e');
       _setError(e.toString());
       return false;
     } finally {
+      // Ensure loading is always set to false
+      print('TransactionProvider: Setting loading to false after delete operation');
       _setLoading(false);
+      print('TransactionProvider: Delete transaction operation completed, loading set to false');
     }
   }
 

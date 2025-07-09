@@ -266,6 +266,19 @@ class ThermalPrinterService {
     
     bytes += generator.row([
       PosColumn(
+        text: 'Pelanggan:',
+        width: 6,
+        styles: const PosStyles(bold: true),
+      ),
+      PosColumn(
+        text: transaction.customerName,
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]);
+    
+    bytes += generator.row([
+      PosColumn(
         text: 'Tanggal:',
         width: 6,
         styles: const PosStyles(bold: true),

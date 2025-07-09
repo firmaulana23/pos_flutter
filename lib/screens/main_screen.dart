@@ -77,9 +77,9 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     // Dashboard for roles with permission
-    if (Permissions.canViewDashboard(role)) {
-      screens.add(const DashboardScreen());
-    }
+    // if (Permissions.canViewDashboard(role)) {
+    //   screens.add(const DashboardScreen());
+    // }
 
     // Profile for all users
     screens.add(const ProfileScreen());
@@ -110,14 +110,14 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     // Dashboard for roles with permission  
-    if (Permissions.canViewDashboard(role)) {
-      items.add(
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-      );
-    }
+    // if (Permissions.canViewDashboard(role)) {
+    //   items.add(
+    //     const BottomNavigationBarItem(
+    //       icon: Icon(Icons.dashboard),
+    //       label: 'Dashboard',
+    //     ),
+    //   );
+    // }
 
     // Profile for all users
     items.add(

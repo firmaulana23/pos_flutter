@@ -95,6 +95,77 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
+  // Load add-ons for a specific menu item
+  Future<List<menu_models.AddOn>> loadMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
+    try {
+      print('MenuProvider: Loading add-ons for menu item $menuItemId...');
+      final addOns = await ApiService.getMenuItemAddOns(menuItemId, usePublicEndpoint: usePublicEndpoint);
+      print('MenuProvider: Loaded ${addOns.length} add-ons for menu item $menuItemId');
+      return addOns;
+    } catch (e) {
+      print('MenuProvider: Error loading add-ons for menu item $menuItemId: $e');
+      return [];
+    }
+  }
+
+  // Load global add-ons (available for all menu items)
+  Future<List<menu_models.AddOn>> loadGlobalAddOns({bool usePublicEndpoint = false}) async {
+    try {
+      print('MenuProvider: Loading global add-ons...');
+      final addOns = await ApiService.getGlobalAddOns(usePublicEndpoint: usePublicEndpoint);
+      print('MenuProvider: Loaded ${addOns.length} global add-ons');
+      return addOns;
+    } catch (e) {
+      print('MenuProvider: Error loading global add-ons: $e');
+      return [];
+    }
+  }
+
+  // Load filtered add-ons with specific criteria
+  Future<List<menu_models.AddOn>> loadFilteredAddOns({
+    bool usePublicEndpoint = false,
+    int? menuItemId,
+    bool? available,
+    bool globalOnly = false,
+  }) async {
+    try {
+      print('MenuProvider: Loading filtered add-ons (menuItemId: $menuItemId, available: $available, globalOnly: $globalOnly)...');
+      final addOns = await ApiService.getFilteredAddOns(
+        usePublicEndpoint: usePublicEndpoint,
+        menuItemId: menuItemId,
+        available: available,
+        globalOnly: globalOnly,
+      );
+      print('MenuProvider: Loaded ${addOns.length} filtered add-ons');
+      return addOns;
+    } catch (e) {
+      print('MenuProvider: Error loading filtered add-ons: $e');
+      return [];
+    }
+  }
+
+  // Get global add-ons from the current loaded add-ons
+  List<menu_models.AddOn> get globalAddOns {
+    return _addOns.where((addOn) => addOn.menuItemId == null).toList();
+  }
+
+  // Get menu-specific add-ons for a particular menu item from the current loaded add-ons
+  List<menu_models.AddOn> getMenuSpecificAddOns(int menuItemId) {
+    return _addOns.where((addOn) => addOn.menuItemId == menuItemId).toList();
+  }
+
+  // Get all available add-ons for a menu item (both global and menu-specific)
+  Future<List<menu_models.AddOn>> getAvailableAddOnsForMenuItem(int menuItemId) async {
+    // Load menu-specific add-ons if not already loaded
+    if (!_addOns.any((addOn) => addOn.menuItemId == menuItemId)) {
+      await loadMenuItemAddOns(menuItemId);
+    }
+    
+    return _addOns.where((addOn) => 
+      addOn.isAvailable && (addOn.menuItemId == null || addOn.menuItemId == menuItemId)
+    ).toList();
+  }
+
   List<menu_models.MenuItem> getMenuItemsByCategory(int categoryId) {
     return _menuItems.where((item) => item.categoryId == categoryId).toList();
   }
@@ -207,6 +278,7 @@ class MenuProvider with ChangeNotifier {
     required String name,
     required double price,
     String? description,
+    int? menuItemId,
   }) async {
     try {
       _setLoading(true);
@@ -216,6 +288,7 @@ class MenuProvider with ChangeNotifier {
         'name': name,
         'price': price,
         if (description != null) 'description': description,
+        if (menuItemId != null) 'menu_item_id': menuItemId,
       };
 
       final newAddOn = await ApiService.createAddOn(addOnData);

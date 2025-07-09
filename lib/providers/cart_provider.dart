@@ -110,7 +110,7 @@ class CartProvider with ChangeNotifier {
     return true;
   }
 
-  Future<Transaction?> saveTransaction() async {
+  Future<Transaction?> saveTransaction({required String customerName}) async {
     if (_items.isEmpty) return null;
 
     try {
@@ -120,13 +120,14 @@ class CartProvider with ChangeNotifier {
       final transactionData = {
         'status': 'pending',
         'total': total,
+        'customer_name': customerName,
         'items': _items.map((item) => {
           'menu_item_id': item.menuItem.id,
           'quantity': item.quantity,
           'price': item.menuItem.price,
           'add_ons': item.addOns.map((addOn) => {
             'add_on_id': addOn.addOn.id,
-            'quantity': addOn.quantity,
+            'quantity': addOn.quantity * item.quantity, // Multiply add-on quantity by menu item quantity
             'price': addOn.addOn.price,
           }).toList(),
         }).toList(),
@@ -143,7 +144,7 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  Future<Transaction?> processPayment(String paymentMethodCode) async {
+  Future<Transaction?> processPayment(String paymentMethodCode, {required String customerName}) async {
     if (_items.isEmpty) return null;
 
     try {
@@ -151,7 +152,7 @@ class CartProvider with ChangeNotifier {
       _setError(null);
 
       // First create the transaction
-      final transaction = await saveTransaction();
+      final transaction = await saveTransaction(customerName: customerName);
       if (transaction == null) return null;
 
       // Then process payment

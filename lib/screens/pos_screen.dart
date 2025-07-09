@@ -281,13 +281,22 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _addToCart(MenuItem menuItem) {
+  void _addToCart(MenuItem menuItem) async {
     final menuProvider = context.read<MenuProvider>();
-    final availableAddOns = menuProvider.getAvailableAddOns();
+    
+    try {
+      // Get add-ons specific to this menu item plus global add-ons
+      final availableAddOns = await menuProvider.getAvailableAddOnsForMenuItem(menuItem.id);
 
-    if (availableAddOns.isNotEmpty) {
-      _showAddOnSelectionDialog(menuItem, availableAddOns);
-    } else {
+      if (availableAddOns.isNotEmpty) {
+        _showAddOnSelectionDialog(menuItem, availableAddOns);
+      } else {
+        context.read<CartProvider>().addItem(menuItem);
+        _showSnackBar('${menuItem.name} ditambahkan ke keranjang');
+      }
+    } catch (e) {
+      debugPrint('Error loading add-ons for menu item ${menuItem.id}: $e');
+      // Fallback: add item without add-ons
       context.read<CartProvider>().addItem(menuItem);
       _showSnackBar('${menuItem.name} ditambahkan ke keranjang');
     }
@@ -360,7 +369,40 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
             
             return ListTile(
               title: Text(addOn.name),
-              subtitle: Text(AppFormatters.formatCurrency(addOn.price)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(AppFormatters.formatCurrency(addOn.price)),
+                  if (addOn.description != null && addOn.description!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      addOn.description!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: addOn.menuItemId == null 
+                          ? Colors.blue.withOpacity(0.1)
+                          : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      addOn.menuItemId == null ? 'Global' : 'Menu Spesifik',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: addOn.menuItemId == null 
+                            ? Colors.blue[700]
+                            : Colors.green[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               trailing: QuantitySelector(
                 quantity: quantity,
                 onIncrement: () {
@@ -539,11 +581,11 @@ class CartBottomSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '+ ${addOn.addOn.name} (${addOn.quantity}x)',
+                    '+ ${addOn.addOn.name} (${addOn.quantity * item.quantity}x)',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
-                    AppFormatters.formatCurrency(addOn.totalPrice),
+                    AppFormatters.formatCurrency(addOn.totalPrice * item.quantity),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -637,7 +679,17 @@ class CartBottomSheet extends StatelessWidget {
   }
 
   void _saveTransaction(BuildContext context, CartProvider cartProvider) async {
-    final transaction = await cartProvider.saveTransaction();
+    // First get customer name
+    final customerName = await showDialog<String>(
+      context: context,
+      builder: (context) => const CustomerNameDialog(),
+    );
+
+    if (customerName == null || customerName.trim().isEmpty) {
+      return; // User cancelled or didn't enter a name
+    }
+
+    final transaction = await cartProvider.saveTransaction(customerName: customerName.trim());
     
     if (transaction != null && context.mounted) {
       Navigator.pop(context);
@@ -652,6 +704,16 @@ class CartBottomSheet extends StatelessWidget {
 
   void _processPayment(BuildContext context, CartProvider cartProvider) async {
     final transactionProvider = context.read<TransactionProvider>();
+    
+    // First get customer name
+    final customerName = await showDialog<String>(
+      context: context,
+      builder: (context) => const CustomerNameDialog(),
+    );
+
+    if (customerName == null || customerName.trim().isEmpty) {
+      return; // User cancelled or didn't enter a name
+    }
     
     // Try to load payment methods if they're empty
     if (transactionProvider.paymentMethods.isEmpty) {
@@ -677,7 +739,7 @@ class CartBottomSheet extends StatelessWidget {
 
     if (selectedPaymentMethod != null) {
       // First create the transaction through cart provider
-      final transaction = await cartProvider.saveTransaction();
+      final transaction = await cartProvider.saveTransaction(customerName: customerName.trim());
       
       if (transaction != null) {
         // Then process payment through transaction provider (which includes automatic receipt printing)
@@ -740,6 +802,81 @@ class PaymentMethodDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Batal'),
+        ),
+      ],
+    );
+  }
+}
+
+class CustomerNameDialog extends StatefulWidget {
+  const CustomerNameDialog({super.key});
+
+  @override
+  State<CustomerNameDialog> createState() => _CustomerNameDialogState();
+}
+
+class _CustomerNameDialogState extends State<CustomerNameDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Nama Pelanggan'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Masukkan nama pelanggan untuk transaksi ini:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Nama Pelanggan',
+                hintText: 'Contoh: John Doe',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama pelanggan harus diisi';
+                }
+                if (value.trim().length < 2) {
+                  return 'Nama pelanggan minimal 2 karakter';
+                }
+                return null;
+              },
+              onFieldSubmitted: (value) {
+                if (_formKey.currentState!.validate()) {
+                  Navigator.of(context).pop(value.trim());
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.of(context).pop(_controller.text.trim());
+            }
+          },
+          child: const Text('Lanjutkan'),
         ),
       ],
     );

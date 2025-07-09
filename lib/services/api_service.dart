@@ -195,41 +195,50 @@ class ApiService {
   }
 
   static Future<List<AddOn>> getAddOns({bool usePublicEndpoint = false}) async {
-    
     try {
-        final url = usePublicEndpoint 
-            ? '$publicBaseUrl/add-ons'
-            : '$baseUrl/add-ons';
-        
-        final response = await http.get(
+      final url = usePublicEndpoint 
+          ? '$publicBaseUrl/add-ons'
+          : '$baseUrl/add-ons';
+      
+      print('Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
+      
+      final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
-        );
+      );
 
-        // Handle response - add-ons API returns data wrapped in an object with "data" field
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-            if (response.body.isEmpty) return [];
-            final jsonData = json.decode(response.body);
-            
-            
-            // Add-ons API returns data in {"data": [...], "limit": 10, "page": 1, "total": 12} format
-            if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
-                final data = jsonData['data'] as List;
-                return data.map((addOn) => AddOn.fromJson(addOn)).toList();
-            }
-            return [];
-        } else {
-            String errorMessage = 'Request failed';
-            try {
-            final errorData = json.decode(response.body);
-            errorMessage = errorData['message'] ?? errorMessage;
-            } catch (e) {
-            errorMessage = 'Request failed with status ${response.statusCode}';
-            }
-            throw ApiException(errorMessage, response.statusCode);
+      print('Add-ons API: Response status: ${response.statusCode}');
+      print('Add-ons API: Response body: ${response.body}');
+
+      // Handle response - add-ons API returns data wrapped in an object with "data" field
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isEmpty) return [];
+        final jsonData = json.decode(response.body);
+        
+        print('Add-ons API Response: $jsonData');
+        
+        // Add-ons API returns data in {"data": [...], "limit": 10, "page": 1, "total": 12} format
+        if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
+          final data = jsonData['data'] as List;
+          print('Add-ons received: ${data.length} items');
+          return data.map((addOn) => AddOn.fromJson(addOn)).toList();
         }
+        
+        print('Add-ons not received in expected format, returning empty');
+        return [];
+      } else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Request failed with status ${response.statusCode}';
+        }
+        throw ApiException(errorMessage, response.statusCode);
+      }
     } catch (e) {
-        return []; // Return empty list instead of throwing error
+      print('Add-ons API Error: $e - returning empty list');
+      return []; // Return empty list instead of throwing error
     }
   }
 
@@ -512,5 +521,141 @@ class ApiService {
     return (data['top_selling_items'] as List?)
         ?.map((item) => TopSellingItem.fromJson(item))
         .toList() ?? [];
+  }
+
+  // Get add-ons for a specific menu item (includes both global and menu-specific add-ons)
+  static Future<List<AddOn>> getMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
+    try {
+      final url = usePublicEndpoint 
+          ? '$publicBaseUrl/menu-item-add-ons/$menuItemId'
+          : '$baseUrl/menu-item-add-ons/$menuItemId';
+      
+      print('Menu Item Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: await _getHeaders(includeAuth: !usePublicEndpoint),
+      );
+
+      print('Menu Item Add-ons API: Response status: ${response.statusCode}');
+      print('Menu Item Add-ons API: Response body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isEmpty) return [];
+        final jsonData = json.decode(response.body);
+        
+        print('Menu Item Add-ons API Response: $jsonData');
+        
+        // API returns {"add_ons": [...], "menu_item": {...}}
+        if (jsonData is Map<String, dynamic> && jsonData['add_ons'] is List) {
+          final data = jsonData['add_ons'] as List;
+          print('Menu Item Add-ons received: ${data.length} items');
+          return data.map((addOn) => AddOn.fromJson(addOn)).toList();
+        }
+        
+        print('Menu Item Add-ons not received in expected format, returning empty');
+        return [];
+      } else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Request failed with status ${response.statusCode}';
+        }
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Menu Item Add-ons API Error: $e - returning empty list');
+      return [];
+    }
+  }
+
+  // Get filtered add-ons with query parameters
+  static Future<List<AddOn>> getFilteredAddOns({
+    bool usePublicEndpoint = false,
+    int? menuItemId,
+    bool? available,
+    bool globalOnly = false,
+  }) async {
+    try {
+      String baseEndpoint = usePublicEndpoint ? '$publicBaseUrl/add-ons' : '$baseUrl/add-ons';
+      List<String> queryParams = [];
+      
+      if (available != null) {
+        queryParams.add('available=$available');
+      }
+      
+      if (globalOnly) {
+        queryParams.add('menu_item_id=global');
+      } else if (menuItemId != null) {
+        queryParams.add('menu_item_id=$menuItemId');
+      }
+      
+      final url = queryParams.isNotEmpty 
+          ? '$baseEndpoint?${queryParams.join('&')}'
+          : baseEndpoint;
+      
+      print('Filtered Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: await _getHeaders(includeAuth: !usePublicEndpoint),
+      );
+
+      print('Filtered Add-ons API: Response status: ${response.statusCode}');
+      print('Filtered Add-ons API: Response body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isEmpty) return [];
+        final jsonData = json.decode(response.body);
+        
+        print('Filtered Add-ons API Response: $jsonData');
+        
+        // API returns {"success": true, "data": [...]} or {"data": [...], "limit": 10, "page": 1, "total": 12}
+        List<dynamic>? data;
+        if (jsonData is Map<String, dynamic>) {
+          data = jsonData['data'] as List?;
+        }
+        
+        if (data != null) {
+          print('Filtered Add-ons received: ${data.length} items');
+          return data.map((addOn) => AddOn.fromJson(addOn)).toList();
+        }
+        
+        print('Filtered Add-ons not received in expected format, returning empty');
+        return [];
+      } else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Request failed with status ${response.statusCode}';
+        }
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Filtered Add-ons API Error: $e - returning empty list');
+      return [];
+    }
+  }
+
+  // Get only global add-ons (available for all menu items)
+  static Future<List<AddOn>> getGlobalAddOns({bool usePublicEndpoint = false}) async {
+    return getFilteredAddOns(
+      usePublicEndpoint: usePublicEndpoint,
+      globalOnly: true,
+      available: true,
+    );
+  }
+
+  // Get add-ons for a specific menu item using the filtered endpoint
+  static Future<List<AddOn>> getAddOnsForMenuItem(int menuItemId, {bool usePublicEndpoint = false}) async {
+    return getFilteredAddOns(
+      usePublicEndpoint: usePublicEndpoint,
+      menuItemId: menuItemId,
+      available: true,
+    );
   }
 }

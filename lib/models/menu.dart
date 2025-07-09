@@ -148,18 +148,24 @@ class MenuItem {
 
 class AddOn {
   final int id;
+  final int? menuItemId;  // null for global add-ons, specific ID for menu-specific add-ons
   final String name;
   final String? description;
   final double price;
+  final double? cogs;
+  final double? margin;
   final bool isAvailable;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   AddOn({
     required this.id,
+    this.menuItemId,
     required this.name,
     this.description,
     required this.price,
+    this.cogs,
+    this.margin,
     required this.isAvailable,
     required this.createdAt,
     required this.updatedAt,
@@ -168,9 +174,12 @@ class AddOn {
   factory AddOn.fromJson(Map<String, dynamic> json) {
     return AddOn(
       id: json['id'],
+      menuItemId: json['menu_item_id'],
       name: json['name'],
       description: json['description'],
       price: (json['price'] as num).toDouble(),
+      cogs: json['cogs'] != null ? (json['cogs'] as num).toDouble() : null,
+      margin: json['margin'] != null ? (json['margin'] as num).toDouble() : null,
       isAvailable: json['is_available'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
@@ -180,9 +189,12 @@ class AddOn {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'menu_item_id': menuItemId,
       'name': name,
       'description': description,
       'price': price,
+      'cogs': cogs,
+      'margin': margin,
       'is_available': isAvailable,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

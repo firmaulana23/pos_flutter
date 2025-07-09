@@ -48,7 +48,7 @@ class TransactionItem {
   }
 
   double get subtotal => price * quantity;
-  double get addOnsTotal => addOns.fold(0, (sum, addOn) => sum + addOn.totalPrice);
+  double get addOnsTotal => (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
   double get total => subtotal + addOnsTotal;
 }
 
@@ -141,6 +141,7 @@ class Transaction {
   final double total;
   final String? paymentMethod; // Payment method as string from API
   final int? userId;
+  final String customerName; // Required customer name
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? paidAt;
@@ -157,6 +158,7 @@ class Transaction {
     required this.total,
     this.paymentMethod,
     this.userId,
+    required this.customerName,
     required this.createdAt,
     this.updatedAt,
     this.paidAt,
@@ -175,6 +177,7 @@ class Transaction {
       total: (json['total'] as num).toDouble(),
       paymentMethod: json['payment_method'], // String from API
       userId: json['user_id'],
+      customerName: json['customer_name'] ?? '', // Default to empty string if not provided
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: json['updated_at'] != null 
           ? DateTime.parse(json['updated_at']) 
@@ -198,6 +201,7 @@ class Transaction {
       'total': total,
       'payment_method': paymentMethod,
       'user_id': userId,
+      'customer_name': customerName,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
@@ -224,7 +228,7 @@ class CartItem {
   }) : addOns = addOns ?? [];
 
   double get subtotal => menuItem.price * quantity;
-  double get addOnsTotal => addOns.fold(0, (sum, addOn) => sum + addOn.totalPrice);
+  double get addOnsTotal => (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
   double get total => subtotal + addOnsTotal;
 
   CartItem copyWith({
