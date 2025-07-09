@@ -6,6 +6,7 @@ import '../providers/menu_provider.dart';
 import '../models/menu.dart';
 import '../widgets/common_widgets.dart';
 import '../utils/formatters.dart';
+import '../utils/theme.dart';
 
 class MenuManagementScreen extends StatefulWidget {
   const MenuManagementScreen({super.key});
@@ -25,6 +26,11 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+        // Trigger rebuild to update FloatingActionButton
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -63,6 +69,19 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
           _buildAddOnsTab(),
         ],
       ),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateMenuItemDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text('New Menu'),
+              tooltip: 'Create New Menu Item',
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => _showCreateAddOnDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text('New Add-on'),
+              tooltip: 'Create New Add-on',
+            ),
     );
   }
 
@@ -819,6 +838,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     final nameController = TextEditingController(text: addOn?.name ?? '');
     final descriptionController = TextEditingController(text: addOn?.description ?? '');
     final priceController = TextEditingController(text: addOn?.price.toString() ?? '');
+    final cogsController = TextEditingController(text: addOn?.cogs?.toString() ?? '');
 
     showDialog(
       context: context,
@@ -826,54 +846,68 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
         title: Text(addOn == null 
             ? (menuItemId != null ? 'Add Menu-Specific Add-on' : 'Add Global Add-on')
             : 'Edit Add-on'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (menuItemId != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                ),
-                child: Text(
-                  'This add-on will be specific to: ${_selectedMenuItem?.name ?? "Selected menu item"}',
-                  style: TextStyle(
-                    color: Colors.orange[700],
-                    fontWeight: FontWeight.w500,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (menuItemId != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    'This add-on will be specific to: ${_selectedMenuItem?.name ?? "Selected menu item"}',
+                    style: TextStyle(
+                      color: Colors.orange[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Add-on Name',
+                  border: OutlineInputBorder(),
                 ),
               ),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Add-on Name',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                decoration: const InputDecoration(
+                  labelText: 'Price',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: priceController,
-              decoration: const InputDecoration(
-                labelText: 'Price',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: cogsController,
+                decoration: const InputDecoration(
+                  labelText: 'Cost of Goods Sold (COGS)',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                  helperText: 'Cost to make this add-on',
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -888,6 +922,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
               }
 
               final price = double.tryParse(priceController.text.trim());
+              final cogs = double.tryParse(cogsController.text.trim()) ?? 0.0;
               if (price == null || price < 0) return;
 
               final menuProvider = Provider.of<MenuProvider>(context, listen: false);
@@ -897,6 +932,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   name: nameController.text.trim(),
                   description: descriptionController.text.trim(),
                   price: price,
+                  cogs: cogs,
                   menuItemId: menuItemId,
                 );
               } else {
@@ -905,6 +941,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   nameController.text.trim(),
                   descriptionController.text.trim(),
                   price,
+                  cogs,
                   addOn.isAvailable,
                 );
               }
@@ -1029,6 +1066,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       addOn.name,
       addOn.description ?? '',
       addOn.price,
+      addOn.cogs ?? 0.0,
       !addOn.isAvailable,
     );
   }
@@ -1050,6 +1088,456 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     // Load add-ons for the selected menu item
     if (menuItem != null) {
       context.read<MenuProvider>().loadMenuItemAddOns(menuItem.id);
+    }
+  }
+
+  void _showCreateMenuItemDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CreateMenuItemDialog(
+        categories: context.read<MenuProvider>().categories,
+        onCreateMenuItem: _createMenuItem,
+      ),
+    );
+  }
+
+  void _showCreateAddOnDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CreateAddOnDialog(
+        onCreateAddOn: _createAddOn,
+      ),
+    );
+  }
+
+  void _createMenuItem({
+    required String name,
+    required double price,
+    required double cogs,
+    required int categoryId,
+    String? description,
+    String? imageUrl,
+  }) async {
+    final menuProvider = context.read<MenuProvider>();
+    try {
+      await menuProvider.createMenuItem(
+        name: name,
+        price: price,
+        cogs: cogs,
+        categoryId: categoryId,
+        description: description,
+        imageUrl: imageUrl,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Menu item "$name" created successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create menu item: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _createAddOn({
+    required String name,
+    required double price,
+    required double cogs,
+    String? description,
+  }) async {
+    final menuProvider = context.read<MenuProvider>();
+    try {
+      await menuProvider.createAddOn(
+        name: name,
+        price: price,
+        cogs: cogs,
+        description: description,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Add-on "$name" created successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create add-on: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class CreateMenuItemDialog extends StatefulWidget {
+  final List<Category> categories;
+  final Function({
+    required String name,
+    required double price,
+    required double cogs,
+    required int categoryId,
+    String? description,
+    String? imageUrl,
+  }) onCreateMenuItem;
+
+  const CreateMenuItemDialog({
+    super.key,
+    required this.categories,
+    required this.onCreateMenuItem,
+  });
+
+  @override
+  State<CreateMenuItemDialog> createState() => _CreateMenuItemDialogState();
+}
+
+class _CreateMenuItemDialogState extends State<CreateMenuItemDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _cogsController = TextEditingController();
+  final _imageUrlController = TextEditingController();
+  
+  int? _selectedCategoryId;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _cogsController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create New Menu Item'),
+      content: SizedBox(
+        width: 500,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Name is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Category dropdown
+                DropdownButtonFormField<int>(
+                  value: _selectedCategoryId,
+                  decoration: const InputDecoration(
+                    labelText: 'Category *',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: widget.categories.map((category) {
+                    return DropdownMenuItem<int>(
+                      value: category.id,
+                      child: Text(category.name),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategoryId = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a category';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Price field
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final price = double.tryParse(value);
+                    if (price == null || price <= 0) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // COGS field
+                TextFormField(
+                  controller: _cogsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cost of Goods Sold (COGS) *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                    helperText: 'Cost to make this item',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'COGS is required';
+                    }
+                    final cogs = double.tryParse(value);
+                    if (cogs == null || cogs < 0) {
+                      return 'Please enter a valid COGS';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Description field
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                
+                // Image URL field
+                TextFormField(
+                  controller: _imageUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Image URL',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitForm,
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final price = double.parse(_priceController.text);
+      final cogs = double.parse(_cogsController.text);
+      final categoryId = _selectedCategoryId!;
+      final description = _descriptionController.text.trim().isEmpty 
+          ? null 
+          : _descriptionController.text.trim();
+      final imageUrl = _imageUrlController.text.trim().isEmpty 
+          ? null 
+          : _imageUrlController.text.trim();
+
+      widget.onCreateMenuItem(
+        name: name,
+        price: price,
+        cogs: cogs,
+        categoryId: categoryId,
+        description: description,
+        imageUrl: imageUrl,
+      );
+
+      Navigator.of(context).pop();
+    }
+  }
+}
+
+class CreateAddOnDialog extends StatefulWidget {
+  final Function({
+    required String name,
+    required double price,
+    required double cogs,
+    String? description,
+  }) onCreateAddOn;
+
+  const CreateAddOnDialog({
+    super.key,
+    required this.onCreateAddOn,
+  });
+
+  @override
+  State<CreateAddOnDialog> createState() => _CreateAddOnDialogState();
+}
+
+class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _cogsController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _cogsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create New Add-on'),
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Name is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Price field
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final price = double.tryParse(value);
+                    if (price == null || price <= 0) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // COGS field
+                TextFormField(
+                  controller: _cogsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cost of Goods Sold (COGS) *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                    helperText: 'Cost to make this add-on',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'COGS is required';
+                    }
+                    final cogs = double.tryParse(value);
+                    if (cogs == null || cogs < 0) {
+                      return 'Please enter a valid COGS';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Description field
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitForm,
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final price = double.parse(_priceController.text);
+      final cogs = double.parse(_cogsController.text);
+      final description = _descriptionController.text.trim().isEmpty 
+          ? null 
+          : _descriptionController.text.trim();
+
+      widget.onCreateAddOn(
+        name: name,
+        price: price,
+        cogs: cogs,
+        description: description,
+      );
+
+      Navigator.of(context).pop();
     }
   }
 }

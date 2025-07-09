@@ -244,7 +244,7 @@ class ApiService {
 
   static Future<Category> createCategory(Map<String, dynamic> categoryData) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/categories'),
+      Uri.parse('$baseUrl/menu/categories'),
       headers: await _getHeaders(),
       body: json.encode(categoryData),
     );

@@ -277,6 +277,7 @@ class MenuProvider with ChangeNotifier {
   Future<void> createAddOn({
     required String name,
     required double price,
+    required double cogs,
     String? description,
     int? menuItemId,
   }) async {
@@ -287,6 +288,7 @@ class MenuProvider with ChangeNotifier {
       final addOnData = {
         'name': name,
         'price': price,
+        'cogs': cogs,
         if (description != null) 'description': description,
         if (menuItemId != null) 'menu_item_id': menuItemId,
       };
@@ -397,7 +399,7 @@ class MenuProvider with ChangeNotifier {
   }
 
   // AddOn CRUD methods
-  Future<void> updateAddOn(int id, String name, String description, double price, bool isAvailable) async {
+  Future<void> updateAddOn(int id, String name, String description, double price, double cogs, bool isAvailable) async {
     try {
       _setLoading(true);
       _setError(null);
@@ -406,6 +408,7 @@ class MenuProvider with ChangeNotifier {
         'name': name,
         'description': description,
         'price': price,
+        'cogs': cogs,
         'is_available': isAvailable,
       };
 
