@@ -21,6 +21,14 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   int? selectedCategory;
   MenuItem? _selectedMenuItem;
   String _addOnFilter = 'all';
+  
+  // Search functionality
+  final TextEditingController _menuSearchController = TextEditingController();
+  final TextEditingController _addOnSearchController = TextEditingController();
+  String _menuSearchQuery = '';
+  String _addOnSearchQuery = '';
+  bool _showMenuSearch = false;
+  bool _showAddOnSearch = false;
 
   @override
   void initState() {
@@ -31,6 +39,20 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
         // Trigger rebuild when tab changes
       });
     });
+    
+    // Add listeners for search functionality
+    _menuSearchController.addListener(() {
+      setState(() {
+        _menuSearchQuery = _menuSearchController.text.toLowerCase();
+      });
+    });
+    
+    _addOnSearchController.addListener(() {
+      setState(() {
+        _addOnSearchQuery = _addOnSearchController.text.toLowerCase();
+      });
+    });
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -39,6 +61,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _menuSearchController.dispose();
+    _addOnSearchController.dispose();
     super.dispose();
   }
 
@@ -54,20 +78,135 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Menu Management'),
+        actions: [
+          IconButton(
+            icon: Icon(_tabController.index == 0 
+                ? (_showMenuSearch ? Icons.close : Icons.search)
+                : (_showAddOnSearch ? Icons.close : Icons.search)),
+            onPressed: () {
+              setState(() {
+                if (_tabController.index == 0) {
+                  _showMenuSearch = !_showMenuSearch;
+                  if (!_showMenuSearch) {
+                    _menuSearchController.clear();
+                    _menuSearchQuery = '';
+                  }
+                } else {
+                  _showAddOnSearch = !_showAddOnSearch;
+                  if (!_showAddOnSearch) {
+                    _addOnSearchController.clear();
+                    _addOnSearchQuery = '';
+                  }
+                }
+              });
+            },
+            tooltip: 'Search',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Categories & Items'),
             Tab(text: 'Add-ons'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildMenuTab(),
-          _buildAddOnsTab(),
+          if (_showMenuSearch && _tabController.index == 0) _buildMenuSearchBar(),
+          if (_showAddOnSearch && _tabController.index == 1) _buildAddOnSearchBar(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMenuTab(),
+                _buildAddOnsTab(),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: TextField(
+        controller: _menuSearchController,
+        decoration: InputDecoration(
+          hintText: 'Search menu items and categories...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _menuSearchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _menuSearchController.clear();
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        textInputAction: TextInputAction.search,
+      ),
+    );
+  }
+
+  Widget _buildAddOnSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: TextField(
+        controller: _addOnSearchController,
+        decoration: InputDecoration(
+          hintText: 'Search add-ons...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _addOnSearchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _addOnSearchController.clear();
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        textInputAction: TextInputAction.search,
       ),
     );
   }
@@ -126,53 +265,81 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                     ),
                   ),
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: menuProvider.categories.length,
-                      itemBuilder: (context, index) {
-                        final category = menuProvider.categories[index];
-                        final isSelected = selectedCategory == category.id;
+                    child: Builder(
+                      builder: (context) {
+                        // Filter categories by search query
+                        final filteredCategories = _menuSearchQuery.isEmpty
+                            ? menuProvider.categories
+                            : menuProvider.categories.where((category) {
+                                final nameMatch = category.name.toLowerCase().contains(_menuSearchQuery);
+                                final descriptionMatch = category.description?.toLowerCase().contains(_menuSearchQuery) ?? false;
+                                return nameMatch || descriptionMatch;
+                              }).toList();
+                        
+                        if (filteredCategories.isEmpty && _menuSearchQuery.isNotEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text(
+                                'No categories match your search',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        
+                        return ListView.builder(
+                          itemCount: filteredCategories.length,
+                          itemBuilder: (context, index) {
+                            final category = filteredCategories[index];
+                            final isSelected = selectedCategory == category.id;
 
-                        return ListTile(
-                          title: Text(category.name),
-                          subtitle: Text('${category.description}'),
-                          selected: isSelected,
-                          selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                          onTap: () {
-                            setState(() {
-                              selectedCategory = isSelected ? null : category.id;
-                            });
+                            return ListTile(
+                              title: Text(category.name),
+                              subtitle: Text('${category.description}'),
+                              selected: isSelected,
+                              selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                              onTap: () {
+                                setState(() {
+                                  selectedCategory = isSelected ? null : category.id;
+                                });
+                              },
+                              trailing: PopupMenuButton(
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.edit),
+                                        SizedBox(width: 8),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.delete, color: Colors.red),
+                                        SizedBox(width: 8),
+                                        Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    _showCategoryDialog(category: category);
+                                  } else if (value == 'delete') {
+                                    _deleteCategory(category);
+                                  }
+                                },
+                              ),
+                            );
                           },
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.edit),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text('Delete', style: TextStyle(color: Colors.red)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _showCategoryDialog(category: category);
-                              } else if (value == 'delete') {
-                                _deleteCategory(category);
-                              }
-                            },
-                          ),
                         );
                       },
                     ),
@@ -228,18 +395,42 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   }
 
   Widget _buildMenuItemsList(MenuProvider menuProvider) {
-    final filteredItems = selectedCategory != null
-        ? menuProvider.menuItems.where((item) => item.categoryId == selectedCategory).toList()
-        : menuProvider.menuItems;
+    List<MenuItem> filteredItems;
+    
+    // First filter by category if selected
+    if (selectedCategory != null) {
+      filteredItems = menuProvider.menuItems
+          .where((item) => item.categoryId == selectedCategory)
+          .toList();
+    } else {
+      filteredItems = menuProvider.menuItems;
+    }
+    
+    // Then filter by search query if provided
+    if (_menuSearchQuery.isNotEmpty) {
+      filteredItems = filteredItems.where((item) {
+        final nameMatch = item.name.toLowerCase().contains(_menuSearchQuery);
+        final descriptionMatch = item.description?.toLowerCase().contains(_menuSearchQuery) ?? false;
+        final categoryMatch = menuProvider.getCategoryById(item.categoryId)?.name.toLowerCase().contains(_menuSearchQuery) ?? false;
+        return nameMatch || descriptionMatch || categoryMatch;
+      }).toList();
+    }
 
     if (filteredItems.isEmpty) {
+      String emptyMessage;
+      if (_menuSearchQuery.isNotEmpty) {
+        emptyMessage = 'No items match your search "$_menuSearchQuery"';
+      } else if (selectedCategory != null) {
+        emptyMessage = 'No items in this category';
+      } else {
+        emptyMessage = 'Select a category to view items';
+      }
+      
       return EmptyStateWidget(
         icon: Icons.restaurant_menu,
-        message: selectedCategory != null
-            ? 'No items in this category'
-            : 'Select a category to view items',
-        actionText: selectedCategory != null ? 'Add Item' : null,
-        onAction: selectedCategory != null ? () => _showMenuItemDialog() : null,
+        message: emptyMessage,
+        actionText: selectedCategory != null && _menuSearchQuery.isEmpty ? 'Add Item' : null,
+        onAction: selectedCategory != null && _menuSearchQuery.isEmpty ? () => _showMenuItemDialog() : null,
       );
     }
 
@@ -493,24 +684,37 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
           return true; // 'all'
       }
     }).toList();
+    
+    // Apply search filter if search query exists
+    if (_addOnSearchQuery.isNotEmpty) {
+      filteredAddOns = filteredAddOns.where((addOn) {
+        final nameMatch = addOn.name.toLowerCase().contains(_addOnSearchQuery);
+        final descriptionMatch = addOn.description?.toLowerCase().contains(_addOnSearchQuery) ?? false;
+        return nameMatch || descriptionMatch;
+      }).toList();
+    }
 
     if (filteredAddOns.isEmpty) {
       String emptyMessage;
-      switch (_addOnFilter) {
-        case 'global':
-          emptyMessage = 'No global add-ons available';
-          break;
-        case 'menu-specific':
-          emptyMessage = 'No menu-specific add-ons available';
-          break;
-        default:
-          emptyMessage = 'No add-ons available';
+      if (_addOnSearchQuery.isNotEmpty) {
+        emptyMessage = 'No add-ons match your search "$_addOnSearchQuery"';
+      } else {
+        switch (_addOnFilter) {
+          case 'global':
+            emptyMessage = 'No global add-ons available';
+            break;
+          case 'menu-specific':
+            emptyMessage = 'No menu-specific add-ons available';
+            break;
+          default:
+            emptyMessage = 'No add-ons available';
+        }
       }
       
       return EmptyStateWidget(
         icon: Icons.extension,
         message: emptyMessage,
-        actionText: 'Add Add-on',
+        actionText: _addOnSearchQuery.isEmpty ? 'Add Add-on' : null,
       );
     }
 

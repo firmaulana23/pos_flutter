@@ -18,13 +18,26 @@ class POSScreen extends StatefulWidget {
 }
 
 class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
-  late TabController _tabController;
   int _selectedCategoryIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _showSearchBar = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadData() {
@@ -43,6 +56,18 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
       appBar: AppBarWithActions(
         title: 'Point of Sale',
         actions: [
+          IconButton(
+            icon: Icon(_showSearchBar ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _showSearchBar = !_showSearchBar;
+                if (!_showSearchBar) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+          ),
           Consumer<CartProvider>(
             builder: (context, cartProvider, child) {
               return Stack(
@@ -106,6 +131,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
 
           return Column(
             children: [
+              if (_showSearchBar) _buildSearchBar(),
               _buildCategoryTabs(categories),
               Expanded(
                 child: _buildMenuGrid(menuProvider),
@@ -128,16 +154,66 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Cari menu...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.inputBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        textInputAction: TextInputAction.search,
+        onSubmitted: (value) {
+          // Focus will be lost automatically, triggering search
+        },
+      ),
+    );
+  }
+
   Widget _buildCategoryTabs(List<Category> categories) {
+    // Add "All Categories" as the first option
+    final allCategoriesOption = Category(
+      id: -1,
+      name: 'Semua',
+      description: 'Semua kategori menu',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    
+    final categoriesWithAll = [allCategoriesOption, ...categories];
+    
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length,
+        itemCount: categoriesWithAll.length,
         itemBuilder: (context, index) {
-          final category = categories[index];
+          final category = categoriesWithAll[index];
           final isSelected = index == _selectedCategoryIndex;
 
           return Padding(
@@ -167,15 +243,45 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     final categories = menuProvider.categoriesWithFallback;
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    final selectedCategory = categories[_selectedCategoryIndex];
-    final menuItems = menuProvider.getMenuItemsByCategory(selectedCategory.id)
-        .where((item) => item.isAvailable)
-        .toList();
+    List<MenuItem> menuItems;
+    
+    // If searching, show all matching items regardless of category
+    if (_searchQuery.isNotEmpty) {
+      menuItems = menuProvider.menuItems
+          .where((item) => 
+              item.isAvailable && 
+              (item.name.toLowerCase().contains(_searchQuery) ||
+               (item.description?.toLowerCase().contains(_searchQuery) ?? false)))
+          .toList();
+    } else {
+      // If "All Categories" is selected (index 0), show all menu items
+      if (_selectedCategoryIndex == 0) {
+        menuItems = menuProvider.menuItems
+            .where((item) => item.isAvailable)
+            .toList();
+      } else {
+        // Show items from selected category (adjust index by -1 due to "All Categories")
+        final selectedCategory = categories[_selectedCategoryIndex - 1];
+        menuItems = menuProvider.getMenuItemsByCategory(selectedCategory.id)
+            .where((item) => item.isAvailable)
+            .toList();
+      }
+    }
 
     if (menuItems.isEmpty) {
+      String emptyMessage;
+      if (_searchQuery.isNotEmpty) {
+        emptyMessage = 'Tidak ada menu yang cocok dengan pencarian "$_searchQuery"';
+      } else if (_selectedCategoryIndex == 0) {
+        emptyMessage = 'Belum ada menu yang tersedia';
+      } else {
+        final selectedCategory = categories[_selectedCategoryIndex - 1];
+        emptyMessage = 'Belum ada menu di kategori ${selectedCategory.name}';
+      }
+      
       return EmptyStateWidget(
         title: 'Tidak ada menu',
-        subtitle: 'Belum ada menu di kategori ${selectedCategory.name}',
+        subtitle: emptyMessage,
         icon: Icons.restaurant_menu_outlined,
       );
     }
@@ -195,6 +301,10 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMenuItemCard(MenuItem menuItem) {
+    final menuProvider = context.read<MenuProvider>();
+    final category = menuProvider.getCategoryById(menuItem.categoryId);
+    final showCategory = _selectedCategoryIndex == 0 || _searchQuery.isNotEmpty;
+    
     return CustomCard(
       onTap: () => _addToCart(menuItem),
       child: Column(
@@ -224,6 +334,25 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
           
           const SizedBox(height: 12),
           
+          // Category badge (show when displaying all categories or searching)
+          if (showCategory && category != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                category.name,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          
           // Menu Item Name
           Text(
             menuItem.name,
@@ -239,7 +368,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
             Text(
               menuItem.description!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurface.withOpacity(0.7),
+                color: AppColors.onSurface.withValues(alpha: 0.7),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -387,8 +516,8 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: addOn.menuItemId == null 
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.green.withOpacity(0.1),
+                          ? Colors.blue.withValues(alpha: 0.1)
+                          : Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
