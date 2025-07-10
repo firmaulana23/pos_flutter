@@ -175,6 +175,70 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
     }
   }
 
+  Future<void> _testCashDrawer() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      bool success = await ThermalPrinterService.testCashDrawer();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Cash drawer opened successfully!' : 'Failed to open cash drawer'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening cash drawer: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testPrintWithDrawer() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      bool success = await ThermalPrinterService.testPrint(testDrawer: true);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Test print with cash drawer successful!' : 'Test print with cash drawer failed'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error in test print with drawer: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,14 +298,36 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           ),
                         ],
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            if (_isConnected) ...[
+                        if (_isConnected) ...[
+                          // First row of buttons
+                          Row(
+                            children: [
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: _testPrint,
                                   icon: const Icon(Icons.print),
                                   label: const Text('Test Print'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _testCashDrawer,
+                                  icon: const Icon(Icons.point_of_sale),
+                                  label: const Text('Test Drawer'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Second row of buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _testPrintWithDrawer,
+                                  icon: const Icon(Icons.receipt_long),
+                                  label: const Text('Print + Drawer'),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -252,7 +338,11 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                                   label: const Text('Disconnect'),
                                 ),
                               ),
-                            ] else
+                            ],
+                          ),
+                        ] else
+                          Row(
+                            children: [
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: _scanForDevices,
@@ -260,8 +350,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                                   label: const Text('Scan Devices'),
                                 ),
                               ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

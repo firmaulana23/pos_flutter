@@ -189,8 +189,48 @@ class ThermalPrinterService {
     }
   }
 
+  // Open cash drawer
+  static Future<bool> openCashDrawer() async {
+    try {
+      if (!_isConnected || _writeCharacteristic == null) {
+        debugPrint('Printer not connected - cannot open cash drawer');
+        return false;
+      }
+
+      // ESC/POS command to open cash drawer
+      // ESC p m t1 t2 - Open cash drawer
+      // m = pin number (usually 0 or 1)
+      // t1 = pulse ON time (2-255, in units of 2ms)
+      // t2 = pulse OFF time (1-255, in units of 2ms)
+      List<int> openDrawerCommand = [
+        0x1B, 0x70, 0x00, 0x19, 0x19, // ESC p 0 25 25 (standard command)
+      ];
+
+      // Alternative command for some cash drawers
+      List<int> alternativeCommand = [
+        0x1B, 0x70, 0x01, 0x19, 0x19, // ESC p 1 25 25
+      ];
+
+      debugPrint('Sending cash drawer open command...');
+      
+      // Try primary command first
+      await _writeCharacteristic!.write(Uint8List.fromList(openDrawerCommand), withoutResponse: true);
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Try alternative command for better compatibility
+      await _writeCharacteristic!.write(Uint8List.fromList(alternativeCommand), withoutResponse: true);
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      debugPrint('Cash drawer open command sent successfully');
+      return true;
+    } catch (e) {
+      debugPrint('Error opening cash drawer: $e');
+      return false;
+    }
+  }
+
   // Print receipt for a transaction
-  static Future<bool> printReceipt(Transaction transaction) async {
+  static Future<bool> printReceipt(Transaction transaction, {bool openDrawer = true}) async {
     try {
       if (!_isConnected || _writeCharacteristic == null) {
         debugPrint('Printer not connected');
@@ -198,7 +238,7 @@ class ThermalPrinterService {
       }
 
       // Generate receipt content
-      Uint8List receiptData = await _generateReceipt(transaction);
+      Uint8List receiptData = await _generateReceipt(transaction, openDrawer: openDrawer);
       
       debugPrint('Receipt data size: ${receiptData.length} bytes');
       
@@ -207,6 +247,14 @@ class ThermalPrinterService {
       
       if (success) {
         debugPrint('Receipt printed successfully');
+        
+        // Open cash drawer after successful receipt printing if requested
+        if (openDrawer) {
+          debugPrint('Opening cash drawer after receipt printing...');
+          await Future.delayed(const Duration(milliseconds: 500)); // Wait for receipt to finish
+          await openCashDrawer();
+        }
+        
         return true;
       } else {
         debugPrint('Failed to print receipt');
@@ -214,15 +262,12 @@ class ThermalPrinterService {
       }
     } catch (e) {
       debugPrint('Error printing receipt: $e');
-      return true;
-    } catch (e) {
-      debugPrint('Error printing receipt: $e');
       return false;
     }
   }
 
   // Generate receipt content using ESC/POS commands
-  static Future<Uint8List> _generateReceipt(Transaction transaction) async {
+  static Future<Uint8List> _generateReceipt(Transaction transaction, {bool openDrawer = true}) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm58, profile);
     List<int> bytes = [];
@@ -458,8 +503,16 @@ class ThermalPrinterService {
       'pass: zona12kopi',
       styles: const PosStyles(align: PosAlign.center),
     );
+    
     // Cut paper
     bytes += generator.cut();
+    
+    // Add cash drawer open command at the end if requested
+    if (openDrawer) {
+      // ESC/POS command to open cash drawer embedded in receipt
+      bytes += [0x1B, 0x70, 0x00, 0x19, 0x19]; // ESC p 0 25 25
+      bytes += [0x1B, 0x70, 0x01, 0x19, 0x19]; // ESC p 1 25 25 (alternative)
+    }
     
     return Uint8List.fromList(bytes);
   }
@@ -479,7 +532,7 @@ class ThermalPrinterService {
   }
 
   // Test printer connection
-  static Future<bool> testPrint() async {
+  static Future<bool> testPrint({bool testDrawer = false}) async {
     try {
       if (!_isConnected || _writeCharacteristic == null) {
         debugPrint('Printer not connected');
@@ -510,8 +563,21 @@ class ThermalPrinterService {
         styles: const PosStyles(align: PosAlign.center),
       );
       
+      if (testDrawer) {
+        bytes += generator.text(
+          'Testing cash drawer...',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+      }
+      
       bytes += generator.emptyLines(2);
       bytes += generator.cut();
+      
+      // Add cash drawer command if testing drawer
+      if (testDrawer) {
+        bytes += [0x1B, 0x70, 0x00, 0x19, 0x19]; // ESC p 0 25 25
+        bytes += [0x1B, 0x70, 0x01, 0x19, 0x19]; // ESC p 1 25 25
+      }
 
       debugPrint('Test print data size: ${bytes.length} bytes');
       
@@ -519,6 +585,9 @@ class ThermalPrinterService {
       
       if (success) {
         debugPrint('Test print successful');
+        if (testDrawer) {
+          debugPrint('Cash drawer test command sent');
+        }
         return true;
       } else {
         debugPrint('Test print failed');
@@ -526,6 +595,22 @@ class ThermalPrinterService {
       }
     } catch (e) {
       debugPrint('Error in test print: $e');
+      return false;
+    }
+  }
+
+  // Test cash drawer only
+  static Future<bool> testCashDrawer() async {
+    try {
+      if (!_isConnected || _writeCharacteristic == null) {
+        debugPrint('Printer not connected - cannot test cash drawer');
+        return false;
+      }
+
+      debugPrint('Testing cash drawer...');
+      return await openCashDrawer();
+    } catch (e) {
+      debugPrint('Error testing cash drawer: $e');
       return false;
     }
   }
