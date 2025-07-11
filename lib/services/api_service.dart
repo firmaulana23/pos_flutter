@@ -17,8 +17,8 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.163:8080/api/v1';
-  static const String publicBaseUrl = 'http://192.168.100.163:8080/api/v1/public';
+  static const String baseUrl = 'http://192.168.100.175:8080/api/v1';
+  static const String publicBaseUrl = 'http://192.168.100.175:8080/api/v1/public';
   
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;

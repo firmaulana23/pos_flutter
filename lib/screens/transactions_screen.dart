@@ -21,6 +21,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +64,79 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       ),
       body: Column(
         children: [
+          // Date filter UI
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _startDate = picked;
+                        });
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Dari tanggal',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      child: Text(_startDate != null
+                          ? AppFormatters.formatDate(_startDate!)
+                          : 'Pilih tanggal'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _endDate = picked;
+                        });
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Sampai tanggal',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      child: Text(_endDate != null
+                          ? AppFormatters.formatDate(_endDate!)
+                          : 'Pilih tanggal'),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: 'Reset filter',
+                  onPressed: () {
+                    setState(() {
+                      _startDate = null;
+                      _endDate = null;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
           TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -86,12 +162,22 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   );
                 }
 
+                // Filter transactions by date
+                List<Transaction> filterByDate(List<Transaction> txs) {
+                  return txs.where((tx) {
+                    final created = tx.createdAt;
+                    if (_startDate != null && created.isBefore(_startDate!)) return false;
+                    if (_endDate != null && created.isAfter(_endDate!.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1)))) return false;
+                    return true;
+                  }).toList();
+                }
+
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildTransactionList(transactionProvider.transactions),
-                    _buildTransactionList(transactionProvider.pendingTransactions),
-                    _buildTransactionList(transactionProvider.paidTransactions),
+                    _buildTransactionList(filterByDate(transactionProvider.transactions)),
+                    _buildTransactionList(filterByDate(transactionProvider.pendingTransactions)),
+                    _buildTransactionList(filterByDate(transactionProvider.paidTransactions)),
                   ],
                 );
               },
