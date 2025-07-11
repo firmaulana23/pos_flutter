@@ -32,7 +32,7 @@ class AppFormatters {
   }
 
   static String formatDateTime(DateTime dateTime) {
-    return _dateTimeFormat.format(dateTime);
+    return _dateTimeFormat.format(dateTime.toLocal());
   }
 
   static String formatTime(DateTime time) {

@@ -3,6 +3,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/transaction.dart';
 import '../utils/formatters.dart';
 
@@ -15,6 +16,9 @@ class ThermalPrinterService {
   // Common service UUIDs for thermal printers
   static const String _thermalPrinterServiceUuid = "000018f0-0000-1000-8000-00805f9b34fb";
   static const String _thermalPrinterCharacteristicUuid = "00002af1-0000-1000-8000-00805f9b34fb";
+
+  static const _storage = FlutterSecureStorage();
+  static const _printerKey = 'bluetooth_printer_id';
 
   // Get available Bluetooth devices
   static Future<List<ScanResult>> getAvailableDevices() async {
@@ -132,6 +136,7 @@ class ThermalPrinterService {
         _connectedDevice = targetDevice;
         _isConnected = true;
         _connectedDeviceAddress = deviceId;
+        await _storage.write(key: _printerKey, value: deviceId); // Save printer config
         debugPrint('Connected to printer: $deviceId');
         return true;
       }
@@ -140,6 +145,13 @@ class ThermalPrinterService {
     } catch (e) {
       debugPrint('Error connecting to printer: $e');
       return false;
+    }
+  }
+
+  static Future<void> tryReconnectPrinter() async {
+    final savedId = await _storage.read(key: _printerKey);
+    if (savedId != null && savedId.isNotEmpty && !_isConnected) {
+      await connectToPrinter(savedId);
     }
   }
 

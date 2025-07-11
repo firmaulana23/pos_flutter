@@ -8,6 +8,7 @@ import '../models/menu.dart';
 import '../utils/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/common_widgets.dart';
+import 'package:flutter_pos/services/thermal_printer_service.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -338,6 +339,20 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ),
                   ],
                 ),
+                // Payment method display
+                if (transaction.paymentMethod != null && transaction.paymentMethod!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Payment Method'),
+                      Text(
+                        _getPaymentMethodDisplayName(transaction.paymentMethod!),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -371,6 +386,27 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     label: const Text('Process Payment'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                // Print button for paid transactions
+                if (transaction.isPaid)
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final success = await ThermalPrinterService.printReceipt(transaction);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success ? 'Struk berhasil dicetak' : 'Gagal mencetak struk'),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.print),
+                    label: const Text('Print'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -1086,5 +1122,24 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         );
       },
     );
+  }
+
+  String _getPaymentMethodDisplayName(String code) {
+    // You can customize this method to return the display name based on the payment method code
+    switch (code.toLowerCase()) {
+      case 'cash':
+        return 'Tunai';
+      case 'card':
+        return 'Kartu Kredit/Debit';
+      case 'ovo':
+        return 'OVO';
+      case 'gopay':
+        return 'GoPay';
+      case 'shopeepay':
+        return 'ShopeePay';
+      // Add more cases for other payment methods as needed
+      default:
+        return code; // Return the code itself if no match is found
+    }
   }
 }

@@ -10,8 +10,9 @@ import 'providers/dashboard_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'utils/theme.dart';
+import 'services/thermal_printer_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Set preferred orientations
@@ -19,6 +20,8 @@ void main() {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  
+  await ThermalPrinterService.tryReconnectPrinter();
   
   runApp(const MyApp());
 }
