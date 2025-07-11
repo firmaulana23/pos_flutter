@@ -147,6 +147,7 @@ class Transaction {
   final DateTime? paidAt;
   final List<TransactionItem> items;
   final User? user;
+  final Map<String, dynamic>? extra; // For uang diterima, kembalian, etc.
 
   Transaction({
     this.id,
@@ -164,6 +165,7 @@ class Transaction {
     this.paidAt,
     required this.items,
     this.user,
+    this.extra,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -191,6 +193,7 @@ class Transaction {
       user: json['user'] != null 
           ? User.fromJson(json['user']) 
           : null,
+      extra: json['extra'] as Map<String, dynamic>?,
     );
   }
 
@@ -205,6 +208,7 @@ class Transaction {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'items': items.map((item) => item.toJson()).toList(),
+      if (extra != null) 'extra': extra,
     };
   }
 

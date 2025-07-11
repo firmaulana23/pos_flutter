@@ -93,7 +93,7 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> payTransaction(int transactionId, String paymentMethodCode) async {
+  Future<bool> payTransaction(int transactionId, String paymentMethodCode, {double? uangDiterima, double? kembalian}) async {
     try {
       _setLoading(true);
       _setError(null);
@@ -103,34 +103,48 @@ class TransactionProvider with ChangeNotifier {
         paymentMethodCode,
       );
 
+      // Attach uang diterima and kembalian for receipt
+      final txWithExtra = Transaction(
+        id: updatedTransaction.id,
+        transactionNo: updatedTransaction.transactionNo,
+        status: updatedTransaction.status,
+        subTotal: updatedTransaction.subTotal,
+        tax: updatedTransaction.tax,
+        discount: updatedTransaction.discount,
+        total: updatedTransaction.total,
+        paymentMethod: updatedTransaction.paymentMethod,
+        userId: updatedTransaction.userId,
+        customerName: updatedTransaction.customerName,
+        createdAt: updatedTransaction.createdAt,
+        updatedAt: updatedTransaction.updatedAt,
+        paidAt: updatedTransaction.paidAt,
+        items: updatedTransaction.items,
+        user: updatedTransaction.user,
+        extra: {
+          if (uangDiterima != null) 'uangDiterima': uangDiterima,
+          if (kembalian != null) 'kembalian': kembalian,
+        },
+      );
+
       // Update local transaction data
       final index = _transactions.indexWhere((t) => t.id == updatedTransaction.id);
       if (index >= 0) {
-        _transactions[index] = updatedTransaction;
+        _transactions[index] = txWithExtra;
       } else {
-        _transactions.add(updatedTransaction);
+        _transactions.add(txWithExtra);
       }
-      
       // Print receipt after successful payment
       if (ThermalPrinterService.isConnected) {
         print('TransactionProvider: Attempting to print receipt for transaction ${updatedTransaction.id}');
         try {
-          final printSuccess = await ThermalPrinterService.printReceipt(updatedTransaction);
+          final printSuccess = await ThermalPrinterService.printReceipt(txWithExtra);
           if (printSuccess) {
             print('TransactionProvider: Receipt printed successfully');
-          } else {
-            print('TransactionProvider: Failed to print receipt');
-            // Don't fail the payment transaction if receipt printing fails
           }
         } catch (e) {
           print('TransactionProvider: Error printing receipt: $e');
-          // Don't fail the payment transaction if receipt printing fails
         }
-      } else {
-        print('TransactionProvider: Printer not connected, skipping receipt printing');
       }
-      
-      notifyListeners();
       return true;
     } catch (e) {
       _setError(e.toString());

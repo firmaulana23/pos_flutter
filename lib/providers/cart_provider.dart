@@ -7,6 +7,8 @@ class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
   bool _isLoading = false;
   String? _error;
+  double _discount = 0.0;
+  double _tax = 0.0;
 
   List<CartItem> get items => _items;
   bool get isLoading => _isLoading;
@@ -16,7 +18,9 @@ class CartProvider with ChangeNotifier {
   int get totalQuantity => _items.fold(0, (sum, item) => sum + item.quantity);
   double get subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
   double get addOnsTotal => _items.fold(0, (sum, item) => sum + item.addOnsTotal);
-  double get total => subtotal + addOnsTotal;
+  double get discount => _discount;
+  double get tax => _tax;
+  double get total => (subtotal + addOnsTotal + tax - discount).clamp(0.0, double.infinity);
 
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -95,6 +99,18 @@ class CartProvider with ChangeNotifier {
 
   void clear() {
     _items.clear();
+    _discount = 0.0;
+    _tax = 0.0;
+    notifyListeners();
+  }
+
+  void setDiscount(double discount) {
+    _discount = discount.clamp(0.0, double.infinity);
+    notifyListeners();
+  }
+
+  void setTax(double tax) {
+    _tax = tax.clamp(0.0, double.infinity);
     notifyListeners();
   }
 
@@ -119,6 +135,9 @@ class CartProvider with ChangeNotifier {
 
       final transactionData = {
         'status': 'pending',
+        'sub_total': subtotal + addOnsTotal,
+        'tax': tax,
+        'discount': discount,
         'total': total,
         'customer_name': customerName,
         'items': _items.map((item) => {

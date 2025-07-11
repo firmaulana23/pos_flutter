@@ -859,9 +859,80 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   ? null 
                   : () async {
                       Navigator.pop(context);
+                      double uangDiterima = 0.0;
+                      double kembalian = 0.0;
+                      if (selectedPaymentMethod.toLowerCase() == 'cash') {
+                        uangDiterima = await showDialog<double>(
+                              context: context,
+                              builder: (context) {
+                                final TextEditingController controller = TextEditingController();
+                                double change = 0.0;
+                                return StatefulBuilder(
+                                  builder: (context, setState) {
+                                    double total = transaction.total;
+                                    double received = double.tryParse(controller.text) ?? 0.0;
+                                    change = (received - total).clamp(0.0, double.infinity);
+                                    return AlertDialog(
+                                      title: const Text('Pembayaran'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('Total'),
+                                              Text(AppFormatters.formatCurrency(total)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          TextFormField(
+                                            controller: controller,
+                                            keyboardType: TextInputType.number,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Uang Diterima',
+                                              prefixText: 'Rp ',
+                                            ),
+                                            onChanged: (val) => setState(() {}),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text('Kembalian'),
+                                              Text(AppFormatters.formatCurrency(change)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Batal'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: (double.tryParse(controller.text) ?? 0.0) >= total
+                                              ? () => Navigator.pop(context, double.tryParse(controller.text) ?? 0.0)
+                                              : null,
+                                          child: const Text('Bayar'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            ) ?? 0.0;
+                        kembalian = (uangDiterima - transaction.total).clamp(0.0, double.infinity);
+                        if (uangDiterima < transaction.total) return;
+                      } else {
+                        uangDiterima = transaction.total;
+                        kembalian = 0.0;
+                      }
                       final success = await transactionProvider.payTransaction(
                         transaction.id!,
                         selectedPaymentMethod,
+                        uangDiterima: uangDiterima,
+                        kembalian: kembalian,
                       );
                       
                       if (!context.mounted) return;
@@ -954,6 +1025,62 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 }
               },
               child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Dialog to edit discount and tax for a transaction
+  void _showEditDiscountTaxDialog(Transaction transaction) {
+    final TextEditingController _discountController = TextEditingController(text: transaction.discount.toStringAsFixed(0));
+    final TextEditingController _taxController = TextEditingController(text: transaction.tax.toStringAsFixed(0));
+    showDialog(
+      context: context, // Use the local context
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Discount & Tax'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _discountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Discount (Rp)',
+                  prefixText: 'Rp ',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _taxController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Tax (Rp)',
+                  prefixText: 'Rp ',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final discount = double.tryParse(_discountController.text) ?? 0.0;
+                final tax = double.tryParse(_taxController.text) ?? 0.0;
+                final provider = Provider.of<TransactionProvider>(context, listen: false);
+                await provider.updateTransaction(
+                  transaction.id!,
+                  discount: discount,
+                  tax: tax,
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
             ),
           ],
         );

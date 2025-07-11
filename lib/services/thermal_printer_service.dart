@@ -456,6 +456,39 @@ class ThermalPrinterService {
       ]);
     }
     
+    // Uang Diterima & Kembalian
+    if (transaction.extra != null && transaction.extra is Map) {
+      final extra = transaction.extra as Map;
+      if (extra['uangDiterima'] != null) {
+        bytes += generator.row([
+          PosColumn(
+            text: 'Uang Diterima:',
+            width: 8,
+            styles: const PosStyles(bold: true),
+          ),
+          PosColumn(
+            text: AppFormatters.formatCurrency(extra['uangDiterima'] as double),
+            width: 4,
+            styles: const PosStyles(align: PosAlign.right, bold: true),
+          ),
+        ]);
+      }
+      if (extra['kembalian'] != null) {
+        bytes += generator.row([
+          PosColumn(
+            text: 'Kembalian:',
+            width: 8,
+            styles: const PosStyles(bold: true),
+          ),
+          PosColumn(
+            text: AppFormatters.formatCurrency(extra['kembalian'] as double),
+            width: 4,
+            styles: const PosStyles(align: PosAlign.right, bold: true),
+          ),
+        ]);
+      }
+    }
+    
     bytes += generator.hr();
     
     bytes += generator.row([

@@ -761,11 +761,89 @@ class CartBottomSheet extends StatelessWidget {
           ),
           child: Column(
             children: [
+              // Subtotal
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Total (${cartProvider.totalQuantity} item)',
+                    'Subtotal (${cartProvider.totalQuantity} item)',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  Text(
+                    AppFormatters.formatCurrency(cartProvider.subtotal + cartProvider.addOnsTotal),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Tax input
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Pajak'),
+                  SizedBox(
+                    width: 120,
+                    child: TextFormField(
+                      initialValue: cartProvider.tax.toStringAsFixed(0),
+                      textAlign: TextAlign.right,
+                      keyboardType: TextInputType.number,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        prefixText: 'Rp ',
+                      ),
+                      onChanged: (value) {
+                        final tax = double.tryParse(value) ?? 0.0;
+                        cartProvider.setTax(tax);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Discount input  
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Diskon'),
+                  SizedBox(
+                    width: 120,
+                    child: TextFormField(
+                      initialValue: cartProvider.discount.toStringAsFixed(0),
+                      textAlign: TextAlign.right,
+                      keyboardType: TextInputType.number,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        prefixText: 'Rp ',
+                      ),
+                      onChanged: (value) {
+                        final discount = double.tryParse(value) ?? 0.0;
+                        cartProvider.setDiscount(discount);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              
+              // Total
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -867,6 +945,78 @@ class CartBottomSheet extends StatelessWidget {
     );
 
     if (selectedPaymentMethod != null) {
+      double uangDiterima = 0.0;
+      double kembalian = 0.0;
+
+      if (selectedPaymentMethod.code.toLowerCase() == 'cash') {
+        // Show dialog for uang diterima
+        uangDiterima = await showDialog<double>(
+          context: context,
+          builder: (context) {
+            final TextEditingController controller = TextEditingController();
+            double change = 0.0;
+            return StatefulBuilder(
+              builder: (context, setState) {
+                double total = cartProvider.total;
+                double received = double.tryParse(controller.text) ?? 0.0;
+                change = (received - total).clamp(0.0, double.infinity);
+                return AlertDialog(
+                  title: const Text('Pembayaran'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total'),
+                          Text(AppFormatters.formatCurrency(total)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Uang Diterima',
+                          prefixText: 'Rp ',
+                        ),
+                        onChanged: (val) => setState(() {}),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Kembalian'),
+                          Text(AppFormatters.formatCurrency(change)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Batal'),
+                    ),
+                    ElevatedButton(
+                      onPressed: (double.tryParse(controller.text) ?? 0.0) >= total
+                          ? () => Navigator.pop(context, double.tryParse(controller.text) ?? 0.0)
+                          : null,
+                      child: const Text('Bayar'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ) ?? 0.0;
+        kembalian = (uangDiterima - cartProvider.total).clamp(0.0, double.infinity);
+        if (uangDiterima < cartProvider.total) return;
+      } else {
+        uangDiterima = cartProvider.total;
+        kembalian = 0.0;
+      }
+
       // First create the transaction through cart provider
       final transaction = await cartProvider.saveTransaction(customerName: customerName.trim());
       
@@ -875,6 +1025,8 @@ class CartBottomSheet extends StatelessWidget {
         final success = await transactionProvider.payTransaction(
           transaction.id!,
           selectedPaymentMethod.code,
+          uangDiterima: uangDiterima,
+          kembalian: kembalian,
         );
         
         if (success && context.mounted) {
