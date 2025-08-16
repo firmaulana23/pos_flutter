@@ -31,7 +31,11 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadTransactions() async {
+  Future<void> loadTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    bool todayOnly = true,
+  }) async {
     try {
       _setLoading(true);
       _setError(null);
@@ -42,7 +46,12 @@ class TransactionProvider with ChangeNotifier {
       final token = await ApiService.getAuthToken();
       print('TransactionProvider: Auth token exists: ${token != null}');
       
-      _transactions = await ApiService.getTransactions();
+      // Use getAllTransactions with date filtering
+      _transactions = await ApiService.getAllTransactions(
+        startDate: startDate,
+        endDate: endDate,
+        todayOnly: todayOnly,
+      );
       print('TransactionProvider: Loaded ${_transactions.length} transactions');
       notifyListeners();
     } catch (e) {
@@ -55,6 +64,28 @@ class TransactionProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Load today's transactions (default behavior)
+  Future<void> loadTodayTransactions() async {
+    await loadTransactions(todayOnly: true);
+  }
+
+  // Load transactions for a specific date range
+  Future<void> loadTransactionsByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    await loadTransactions(
+      startDate: startDate,
+      endDate: endDate,
+      todayOnly: false,
+    );
+  }
+
+  // Load all transactions without date filter
+  Future<void> loadAllTransactions() async {
+    await loadTransactions(todayOnly: false);
   }
 
   Future<void> loadPaymentMethods({bool usePublicEndpoint = false}) async {

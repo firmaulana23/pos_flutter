@@ -39,15 +39,29 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   void _loadTransactions() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().loadTransactions();
+      _applyDateFilter();
     });
+  }
+
+  // Apply date filter and load transactions
+  void _applyDateFilter() {
+    final transactionProvider = context.read<TransactionProvider>();
+    
+    if (_startDate != null && _endDate != null) {
+      // Load transactions for selected date range
+      transactionProvider.loadTransactionsByDateRange(
+        startDate: _startDate!,
+        endDate: _endDate!,
+      );
+    } else {
+      // Load today's transactions by default (gets all without limit)
+      transactionProvider.loadTodayTransactions();
+    }
   }
 
   // Alternative method to force refresh the transaction list
   void _forceRefreshTransactions() {
-    final transactionProvider = context.read<TransactionProvider>();
-    // Force a complete reload from the server
-    transactionProvider.loadTransactions();
+    _applyDateFilter();
   }
 
   @override
@@ -82,6 +96,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         setState(() {
                           _startDate = picked;
                         });
+                        // Auto-apply filter when date is selected
+                        _applyDateFilter();
                       }
                     },
                     child: InputDecorator(
@@ -110,6 +126,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         setState(() {
                           _endDate = picked;
                         });
+                        // Auto-apply filter when date is selected
+                        _applyDateFilter();
                       }
                     },
                     child: InputDecorator(
@@ -132,6 +150,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       _startDate = null;
                       _endDate = null;
                     });
+                    // Reset to today's transactions when clearing filter
+                    _applyDateFilter();
                   },
                 ),
               ],
@@ -162,22 +182,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   );
                 }
 
-                // Filter transactions by date
-                List<Transaction> filterByDate(List<Transaction> txs) {
-                  return txs.where((tx) {
-                    final created = tx.createdAt;
-                    if (_startDate != null && created.isBefore(_startDate!)) return false;
-                    if (_endDate != null && created.isAfter(_endDate!.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1)))) return false;
-                    return true;
-                  }).toList();
-                }
-
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildTransactionList(filterByDate(transactionProvider.transactions)),
-                    _buildTransactionList(filterByDate(transactionProvider.pendingTransactions)),
-                    _buildTransactionList(filterByDate(transactionProvider.paidTransactions)),
+                    _buildTransactionList(transactionProvider.transactions),
+                    _buildTransactionList(transactionProvider.pendingTransactions),
+                    _buildTransactionList(transactionProvider.paidTransactions),
                   ],
                 );
               },

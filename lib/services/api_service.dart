@@ -17,8 +17,8 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.175:8080/api/v1';
-  static const String publicBaseUrl = 'http://192.168.100.175:8080/api/v1/public';
+  static const String baseUrl = 'http://192.168.100.148:8080/api/v1';
+  static const String publicBaseUrl = 'http://192.168.100.148:8080/api/v1/public';
   
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
@@ -384,9 +384,14 @@ class ApiService {
     }
   }
 
-  static Future<List<Transaction>> getTransactions() async {
+  static Future<List<Transaction>> getTransactions({int? limit}) async {
+    String url = '$baseUrl/transactions';
+    if (limit != null) {
+      url += '?limit=$limit';
+    }
+
     final response = await http.get(
-      Uri.parse('$baseUrl/transactions'),
+      Uri.parse(url),
       headers: await _getHeaders(),
     );
 
@@ -403,6 +408,65 @@ class ApiService {
     return transactionsData
         .map((transaction) => Transaction.fromJson(transaction))
         .toList();
+  }
+
+  // Get all transactions with optional date filter (defaults to today)
+  static Future<List<Transaction>> getAllTransactions({
+    DateTime? startDate,
+    DateTime? endDate,
+    bool todayOnly = true,
+  }) async {
+    String url = '$baseUrl/transactions?limit=100'; // High limit to get all
+    
+    // If todayOnly is true and no dates provided, use today's date
+    if (todayOnly && startDate == null && endDate == null) {
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      
+      url += '&start_date=${todayStart.toIso8601String().split('T')[0]}';
+      url += '&end_date=${todayEnd.toIso8601String().split('T')[0]}';
+    } else {
+      // Use provided dates
+      if (startDate != null) {
+        url += '&start_date=${startDate.toIso8601String().split('T')[0]}';
+      }
+      if (endDate != null) {
+        url += '&end_date=${endDate.toIso8601String().split('T')[0]}';
+      }
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: await _getHeaders(),
+    );
+
+    final data = _handleResponse(response);
+    final transactionsData = data['data'] as List?;
+    if (transactionsData == null) {
+      return [];
+    }
+    
+    return transactionsData
+        .map((transaction) => Transaction.fromJson(transaction))
+        .toList();
+  }
+
+  // Get today's transactions only
+  static Future<List<Transaction>> getTodayTransactions() async {
+    return getAllTransactions(todayOnly: true);
+  }
+
+  // Get transactions for a specific date range
+  static Future<List<Transaction>> getTransactionsByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    return getAllTransactions(
+      startDate: startDate,
+      endDate: endDate,
+      todayOnly: false,
+    );
   }
 
   static Future<Transaction> getTransaction(int id) async {
