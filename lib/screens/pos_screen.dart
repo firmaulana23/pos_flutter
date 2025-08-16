@@ -414,8 +414,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     final menuProvider = context.read<MenuProvider>();
     
     try {
-      // Get add-ons specific to this menu item plus global add-ons
-      final availableAddOns = await menuProvider.getAvailableAddOnsForMenuItem(menuItem.id);
+      // Load add-ons specific to this menu item
+      await menuProvider.loadMenuItemAddOns(menuItem.id, usePublicEndpoint: true);
+      final availableAddOns = menuProvider.menuItemAddOns;
 
       if (availableAddOns.isNotEmpty) {
         _showAddOnSelectionDialog(menuItem, availableAddOns);

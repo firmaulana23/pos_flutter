@@ -20,7 +20,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
   late TabController _tabController;
   int? selectedCategory;
   MenuItem? _selectedMenuItem;
-  String _addOnFilter = 'all';
   
   // Search functionality
   final TextEditingController _menuSearchController = TextEditingController();
@@ -449,7 +448,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
             ),
             child: ListTile(
               selected: _selectedMenuItem?.id == item.id,
-              onTap: () => _selectMenuItem(item),
               leading: item.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
@@ -596,22 +594,9 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                       Row(
                         children: [
                           ElevatedButton.icon(
-                            onPressed: () => _showAddOnDialog(),
+                            onPressed: _showCreateAddOnDialog,
                             icon: const Icon(Icons.add),
-                            label: const Text('Add Global Add-on'),
-                          ),
-                          const SizedBox(width: 8),
-                          Tooltip(
-                            message: _selectedMenuItem == null 
-                                ? 'Select a menu item from "Categories & Items" tab first'
-                                : 'Add add-on specific to ${_selectedMenuItem!.name}',
-                            child: ElevatedButton.icon(
-                              onPressed: _selectedMenuItem != null 
-                                  ? () => _showAddOnDialog(menuItemId: _selectedMenuItem!.id)
-                                  : null,
-                              icon: const Icon(Icons.add_box),
-                              label: const Text('Add Menu-Specific'),
-                            ),
+                            label: const Text('Add Add-on'),
                           ),
                         ],
                       ),
@@ -620,26 +605,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _addOnFilter,
-                          decoration: const InputDecoration(
-                            labelText: 'Filter Add-ons',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'all', child: Text('All Add-ons')),
-                            DropdownMenuItem(value: 'global', child: Text('Global Add-ons')),
-                            DropdownMenuItem(value: 'menu-specific', child: Text('Menu-Specific Add-ons')),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              _addOnFilter = value ?? 'all';
-                            });
-                          },
-                        ),
-                      ),
                       if (_selectedMenuItem != null) ...[
                         const SizedBox(width: 12),
                         Container(
@@ -674,16 +639,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
 
   Widget _buildAddOnsList(MenuProvider menuProvider) {
     // Filter add-ons based on selected filter
-    List<AddOn> filteredAddOns = menuProvider.addOns.where((addOn) {
-      switch (_addOnFilter) {
-        case 'global':
-          return addOn.menuItemId == null;
-        case 'menu-specific':
-          return addOn.menuItemId != null;
-        default:
-          return true; // 'all'
-      }
-    }).toList();
+    List<AddOn> filteredAddOns = menuProvider.addOns;
     
     // Apply search filter if search query exists
     if (_addOnSearchQuery.isNotEmpty) {
@@ -699,16 +655,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       if (_addOnSearchQuery.isNotEmpty) {
         emptyMessage = 'No add-ons match your search "$_addOnSearchQuery"';
       } else {
-        switch (_addOnFilter) {
-          case 'global':
-            emptyMessage = 'No global add-ons available';
-            break;
-          case 'menu-specific':
-            emptyMessage = 'No menu-specific add-ons available';
-            break;
-          default:
-            emptyMessage = 'No add-ons available';
-        }
+        emptyMessage = 'No add-ons available';
       }
       
       return EmptyStateWidget(
@@ -745,51 +692,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                       color: addOn.isAvailable ? Colors.green : Colors.red,
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: addOn.menuItemId == null 
-                            ? Colors.blue.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: addOn.menuItemId == null 
-                              ? Colors.blue.withOpacity(0.3)
-                              : Colors.orange.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        addOn.menuItemId == null ? 'Global' : 'Menu-Specific',
-                        style: TextStyle(
-                          color: addOn.menuItemId == null 
-                              ? Colors.blue[700]
-                              : Colors.orange[700],
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-                if (addOn.menuItemId != null) ...[
-                  const SizedBox(height: 4),
-                  FutureBuilder<MenuItem?>(
-                    future: _getMenuItemById(addOn.menuItemId!),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data != null) {
-                        return Text(
-                          'For: ${snapshot.data!.name}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
               ],
             ),
             trailing: PopupMenuButton(
@@ -827,7 +731,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
               ],
               onSelected: (value) {
                 if (value == 'edit') {
-                  _showAddOnDialog(addOn: addOn);
+                  _showEditAddOnDialog(addOn);
                 } else if (value == 'toggle') {
                   _toggleAddOnAvailability(addOn);
                 } else if (value == 'delete') {
@@ -1023,128 +927,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     );
   }
 
-  void _showAddOnDialog({AddOn? addOn, int? menuItemId}) {
-    final nameController = TextEditingController(text: addOn?.name ?? '');
-    final descriptionController = TextEditingController(text: addOn?.description ?? '');
-    final priceController = TextEditingController(text: addOn?.price.toString() ?? '');
-    final cogsController = TextEditingController(text: addOn?.cogs?.toString() ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(addOn == null 
-            ? (menuItemId != null ? 'Add Menu-Specific Add-on' : 'Add Global Add-on')
-            : 'Edit Add-on'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (menuItemId != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    'This add-on will be specific to: ${_selectedMenuItem?.name ?? "Selected menu item"}',
-                    style: TextStyle(
-                      color: Colors.orange[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Add-on Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Price',
-                  border: OutlineInputBorder(),
-                  prefixText: 'Rp ',
-                ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: cogsController,
-                decoration: const InputDecoration(
-                  labelText: 'Cost of Goods Sold (COGS)',
-                  border: OutlineInputBorder(),
-                  prefixText: 'Rp ',
-                  helperText: 'Cost to make this add-on',
-                ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty ||
-                  priceController.text.trim().isEmpty) {
-                return;
-              }
-
-              final price = double.tryParse(priceController.text.trim());
-              final cogs = double.tryParse(cogsController.text.trim()) ?? 0.0;
-              if (price == null || price < 0) return;
-
-              final menuProvider = Provider.of<MenuProvider>(context, listen: false);
-              
-              if (addOn == null) {
-                await menuProvider.createAddOn(
-                  name: nameController.text.trim(),
-                  description: descriptionController.text.trim(),
-                  price: price,
-                  cogs: cogs,
-                  menuItemId: menuItemId,
-                );
-              } else {
-                await menuProvider.updateAddOn(
-                  addOn.id,
-                  nameController.text.trim(),
-                  descriptionController.text.trim(),
-                  price,
-                  cogs,
-                  addOn.isAvailable,
-                );
-              }
-
-              if (mounted) {
-                Navigator.pop(context);
-              }
-            },
-            child: Text(addOn == null ? 'Add' : 'Update'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _deleteCategory(Category category) {
     showDialog(
@@ -1260,26 +1042,6 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     );
   }
 
-  Future<MenuItem?> _getMenuItemById(int menuItemId) async {
-    final menuProvider = context.read<MenuProvider>();
-    return menuProvider.menuItems.firstWhere(
-      (item) => item.id == menuItemId,
-      orElse: () => throw StateError('Menu item not found'),
-    );
-  }
-
-  void _selectMenuItem(MenuItem? menuItem) {
-    debugPrint('Selecting menu item: ${menuItem?.name ?? 'null'}');
-    setState(() {
-      _selectedMenuItem = menuItem;
-    });
-    
-    // Load add-ons for the selected menu item
-    if (menuItem != null) {
-      context.read<MenuProvider>().loadMenuItemAddOns(menuItem.id);
-    }
-  }
-
   void _showCreateMenuItemDialog() {
     showDialog(
       context: context,
@@ -1295,6 +1057,18 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       context: context,
       builder: (context) => CreateAddOnDialog(
         onCreateAddOn: _createAddOn,
+      ),
+    );
+  }
+
+  void _showEditAddOnDialog(AddOn addOn) {
+    showDialog(
+      context: context,
+      builder: (context) => EditAddOnDialog(
+        addOn: addOn,
+        onUpdateAddOn: _updateAddOn,
+        onAddMenuItems: _addMenuItemsToAddOn,
+        onRemoveMenuItems: _removeMenuItemsFromAddOn,
       ),
     );
   }
@@ -1341,16 +1115,30 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
     required String name,
     required double price,
     required double cogs,
+    required List<int> menuItemIds,
     String? description,
   }) async {
     final menuProvider = context.read<MenuProvider>();
     try {
-      await menuProvider.createAddOn(
+      final success = await menuProvider.createAddOn(
         name: name,
         price: price,
         cogs: cogs,
+        menuItemIds: menuItemIds,
         description: description,
       );
+      
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(menuProvider.error ?? 'Failed to create add-on'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1364,6 +1152,123 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to create add-on: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _updateAddOn({
+    required int id,
+    required String name,
+    required double price,
+    required double cogs,
+    String? description,
+    bool? isAvailable,
+  }) async {
+    final menuProvider = context.read<MenuProvider>();
+    try {
+      await menuProvider.updateAddOn(
+        id,
+        name,
+        description ?? '',
+        price,
+        cogs,
+        isAvailable ?? true,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Add-on "$name" updated successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating add-on: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _addMenuItemsToAddOn({
+    required int addOnId,
+    required List<int> menuItemIds,
+  }) async {
+    final menuProvider = context.read<MenuProvider>();
+    try {
+      final success = await menuProvider.addMenuItemsToAddOn(addOnId, menuItemIds);
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Menu items added to add-on successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(menuProvider.error ?? 'Failed to add menu items'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding menu items: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeMenuItemsFromAddOn({
+    required int addOnId,
+    required List<int> menuItemIds,
+  }) async {
+    final menuProvider = context.read<MenuProvider>();
+    try {
+      final success = await menuProvider.removeMenuItemsFromAddOn(addOnId, menuItemIds);
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Menu items removed from add-on successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(menuProvider.error ?? 'Failed to remove menu items'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error removing menu items: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -1582,6 +1487,7 @@ class CreateAddOnDialog extends StatefulWidget {
     required String name,
     required double price,
     required double cogs,
+    required List<int> menuItemIds,
     String? description,
   }) onCreateAddOn;
 
@@ -1600,6 +1506,7 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _cogsController = TextEditingController();
+  List<int> _selectedMenuItemIds = [];
 
   @override
   void dispose() {
@@ -1692,6 +1599,69 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
                   ),
                   maxLines: 3,
                 ),
+                const SizedBox(height: 16),
+                
+                // Menu Items Selection
+                Consumer<MenuProvider>(
+                  builder: (context, menuProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Assign to Menu Items *',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (menuProvider.menuItems.isEmpty)
+                          const Text(
+                            'No menu items available. Please create menu items first.',
+                            style: TextStyle(color: Colors.grey),
+                          )
+                        else
+                          Container(
+                            height: 150,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: ListView.builder(
+                              itemCount: menuProvider.menuItems.length,
+                              itemBuilder: (context, index) {
+                                final menuItem = menuProvider.menuItems[index];
+                                final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                                
+                                return CheckboxListTile(
+                                  title: Text(menuItem.name),
+                                  subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _selectedMenuItemIds.add(menuItem.id);
+                                      } else {
+                                        _selectedMenuItemIds.remove(menuItem.id);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${_selectedMenuItemIds.length} menu item(s) selected',
+                          style: TextStyle(
+                            color: _selectedMenuItemIds.isEmpty ? Colors.red : Colors.green,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -1712,6 +1682,17 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      // Validate menu item selection
+      if (_selectedMenuItemIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one menu item'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
       final name = _nameController.text.trim();
       final price = double.parse(_priceController.text);
       final cogs = double.parse(_cogsController.text);
@@ -1723,9 +1704,556 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
         name: name,
         price: price,
         cogs: cogs,
+        menuItemIds: _selectedMenuItemIds,
         description: description,
       );
 
+      Navigator.of(context).pop();
+    }
+  }
+}
+
+class EditAddOnDialog extends StatefulWidget {
+  final AddOn addOn;
+  final Function({
+    required int id,
+    required String name,
+    required double price,
+    required double cogs,
+    String? description,
+    bool? isAvailable,
+  }) onUpdateAddOn;
+  final Function({
+    required int addOnId,
+    required List<int> menuItemIds,
+  }) onAddMenuItems;
+  final Function({
+    required int addOnId,
+    required List<int> menuItemIds,
+  }) onRemoveMenuItems;
+
+  const EditAddOnDialog({
+    super.key,
+    required this.addOn,
+    required this.onUpdateAddOn,
+    required this.onAddMenuItems,
+    required this.onRemoveMenuItems,
+  });
+
+  @override
+  State<EditAddOnDialog> createState() => _EditAddOnDialogState();
+}
+
+class _EditAddOnDialogState extends State<EditAddOnDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _cogsController;
+  late bool _isAvailable;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.addOn.name);
+    _descriptionController = TextEditingController(text: widget.addOn.description ?? '');
+    _priceController = TextEditingController(text: widget.addOn.price.toString());
+    _cogsController = TextEditingController(text: widget.addOn.cogs?.toString() ?? '0.0');
+    _isAvailable = widget.addOn.isAvailable;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _cogsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Edit Add-on: ${widget.addOn.name}'),
+      content: SizedBox(
+        width: 500,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Name is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Price field
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final price = double.tryParse(value);
+                    if (price == null || price <= 0) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // COGS field
+                TextFormField(
+                  controller: _cogsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cost of Goods Sold (COGS) *',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'COGS is required';
+                    }
+                    final cogs = double.tryParse(value);
+                    if (cogs == null || cogs < 0) {
+                      return 'Please enter a valid COGS';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Description field
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+
+                // Availability toggle
+                SwitchListTile(
+                  title: const Text('Available'),
+                  subtitle: Text(_isAvailable ? 'This add-on is available for selection' : 'This add-on is not available for selection'),
+                  value: _isAvailable,
+                  onChanged: (value) {
+                    setState(() {
+                      _isAvailable = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Menu Items Management Section
+                const Divider(),
+                Row(
+                  children: [
+                    Icon(Icons.restaurant_menu, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Menu Items Management',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Current menu items (if any from API response)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current Assigned Menu Items:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This add-on is currently assigned to menu items. Use the buttons below to manage assignments.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Action buttons for menu item management
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showAddMenuItemsDialog(),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add Menu Items'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showRemoveMenuItemsDialog(),
+                        icon: const Icon(Icons.remove, size: 16),
+                        label: const Text('Remove Menu Items'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitForm,
+          child: const Text('Update'),
+        ),
+      ],
+    );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final price = double.parse(_priceController.text);
+      final cogs = double.parse(_cogsController.text);
+      final description = _descriptionController.text.trim().isEmpty 
+          ? null 
+          : _descriptionController.text.trim();
+
+      widget.onUpdateAddOn(
+        id: widget.addOn.id,
+        name: name,
+        price: price,
+        cogs: cogs,
+        description: description,
+        isAvailable: _isAvailable,
+      );
+
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showAddMenuItemsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AddMenuItemsToAddOnDialog(
+        addOnId: widget.addOn.id,
+        addOnName: widget.addOn.name,
+        onAddMenuItems: (menuItemIds) {
+          widget.onAddMenuItems(
+            addOnId: widget.addOn.id,
+            menuItemIds: menuItemIds,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showRemoveMenuItemsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => RemoveMenuItemsFromAddOnDialog(
+        addOnId: widget.addOn.id,
+        addOnName: widget.addOn.name,
+        onRemoveMenuItems: (menuItemIds) {
+          widget.onRemoveMenuItems(
+            addOnId: widget.addOn.id,
+            menuItemIds: menuItemIds,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class AddMenuItemsToAddOnDialog extends StatefulWidget {
+  final int addOnId;
+  final String addOnName;
+  final Function(List<int> menuItemIds) onAddMenuItems;
+
+  const AddMenuItemsToAddOnDialog({
+    super.key,
+    required this.addOnId,
+    required this.addOnName,
+    required this.onAddMenuItems,
+  });
+
+  @override
+  State<AddMenuItemsToAddOnDialog> createState() => _AddMenuItemsToAddOnDialogState();
+}
+
+class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
+  List<int> _selectedMenuItemIds = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Add Menu Items to "${widget.addOnName}"'),
+      content: SizedBox(
+        width: 400,
+        height: 400,
+        child: Consumer<MenuProvider>(
+          builder: (context, menuProvider, child) {
+            if (menuProvider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (menuProvider.menuItems.isEmpty) {
+              return const Center(
+                child: Text('No menu items available'),
+              );
+            }
+
+            return Column(
+              children: [
+                Text(
+                  'Select menu items to add to this add-on:',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: menuProvider.menuItems.length,
+                    itemBuilder: (context, index) {
+                      final menuItem = menuProvider.menuItems[index];
+                      final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                      
+                      return CheckboxListTile(
+                        title: Text(menuItem.name),
+                        subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedMenuItemIds.add(menuItem.id);
+                            } else {
+                              _selectedMenuItemIds.remove(menuItem.id);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_selectedMenuItemIds.length} menu item(s) selected',
+                  style: TextStyle(
+                    color: _selectedMenuItemIds.isEmpty ? Colors.grey : Colors.green,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedMenuItemIds.isEmpty ? null : _submitSelection,
+          child: const Text('Add Selected'),
+        ),
+      ],
+    );
+  }
+
+  void _submitSelection() {
+    if (_selectedMenuItemIds.isNotEmpty) {
+      widget.onAddMenuItems(_selectedMenuItemIds);
+      Navigator.of(context).pop();
+    }
+  }
+}
+
+class RemoveMenuItemsFromAddOnDialog extends StatefulWidget {
+  final int addOnId;
+  final String addOnName;
+  final Function(List<int> menuItemIds) onRemoveMenuItems;
+
+  const RemoveMenuItemsFromAddOnDialog({
+    super.key,
+    required this.addOnId,
+    required this.addOnName,
+    required this.onRemoveMenuItems,
+  });
+
+  @override
+  State<RemoveMenuItemsFromAddOnDialog> createState() => _RemoveMenuItemsFromAddOnDialogState();
+}
+
+class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddOnDialog> {
+  List<int> _selectedMenuItemIds = [];
+  bool _isLoading = true;
+  List<MenuItem> _currentMenuItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // TODO: In a real implementation, you'd fetch the current menu items for this add-on
+    // For now, we'll show all menu items (user needs to know which ones are currently assigned)
+    _loadCurrentMenuItems();
+  }
+
+  void _loadCurrentMenuItems() {
+    // Placeholder: In real implementation, you'd call an API to get menu items for this add-on
+    // For now, we'll use all menu items as a demo
+    final menuProvider = context.read<MenuProvider>();
+    setState(() {
+      _currentMenuItems = menuProvider.menuItems;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Remove Menu Items from "${widget.addOnName}"'),
+      content: SizedBox(
+        width: 400,
+        height: 400,
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.orange[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Select menu items to remove from this add-on. Note: An add-on must be assigned to at least one menu item.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_currentMenuItems.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text('No menu items currently assigned to this add-on'),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _currentMenuItems.length,
+                      itemBuilder: (context, index) {
+                        final menuItem = _currentMenuItems[index];
+                        final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                        
+                        return CheckboxListTile(
+                          title: Text(menuItem.name),
+                          subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _selectedMenuItemIds.add(menuItem.id);
+                              } else {
+                                _selectedMenuItemIds.remove(menuItem.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_selectedMenuItemIds.length} menu item(s) selected for removal',
+                  style: TextStyle(
+                    color: _selectedMenuItemIds.isEmpty ? Colors.grey : Colors.red,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedMenuItemIds.isEmpty ? null : _submitSelection,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Remove Selected'),
+        ),
+      ],
+    );
+  }
+
+  void _submitSelection() {
+    if (_selectedMenuItemIds.isNotEmpty) {
+      widget.onRemoveMenuItems(_selectedMenuItemIds);
       Navigator.of(context).pop();
     }
   }

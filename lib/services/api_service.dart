@@ -278,6 +278,28 @@ class ApiService {
     return AddOn.fromJson(data);
   }
 
+  // Add menu items to an existing add-on
+  static Future<void> addMenuItemsToAddOn(int addOnId, List<int> menuItemIds) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/add-ons/$addOnId/menu-items'),
+      headers: await _getHeaders(),
+      body: json.encode({'menu_item_ids': menuItemIds}),
+    );
+
+    _handleResponse(response);
+  }
+
+  // Remove menu items from an add-on
+  static Future<void> removeMenuItemsFromAddOn(int addOnId, List<int> menuItemIds) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/add-ons/$addOnId/menu-items'),
+      headers: await _getHeaders(),
+      body: json.encode({'menu_item_ids': menuItemIds}),
+    );
+
+    _handleResponse(response);
+  }
+
   static Future<Category> updateCategory(int id, Map<String, dynamic> categoryData) async {
     final response = await http.put(
       Uri.parse('$baseUrl/categories/$id'),
@@ -728,91 +750,4 @@ class ApiService {
     }
   }
 
-  // Get filtered add-ons with query parameters
-  static Future<List<AddOn>> getFilteredAddOns({
-    bool usePublicEndpoint = false,
-    int? menuItemId,
-    bool? available,
-    bool globalOnly = false,
-  }) async {
-    try {
-      String baseEndpoint = usePublicEndpoint ? '$publicBaseUrl/add-ons' : '$baseUrl/add-ons';
-      List<String> queryParams = [];
-      
-      if (available != null) {
-        queryParams.add('available=$available');
-      }
-      
-      if (globalOnly) {
-        queryParams.add('menu_item_id=global');
-      } else if (menuItemId != null) {
-        queryParams.add('menu_item_id=$menuItemId');
-      }
-      
-      final url = queryParams.isNotEmpty 
-          ? '$baseEndpoint?${queryParams.join('&')}'
-          : baseEndpoint;
-      
-      print('Filtered Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: await _getHeaders(includeAuth: !usePublicEndpoint),
-      );
-
-      print('Filtered Add-ons API: Response status: ${response.statusCode}');
-      print('Filtered Add-ons API: Response body: ${response.body}');
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (response.body.isEmpty) return [];
-        final jsonData = json.decode(response.body);
-        
-        print('Filtered Add-ons API Response: $jsonData');
-        
-        // API returns {"success": true, "data": [...]} or {"data": [...], "limit": 10, "page": 1, "total": 12}
-        List<dynamic>? data;
-        if (jsonData is Map<String, dynamic>) {
-          data = jsonData['data'] as List?;
-        }
-        
-        if (data != null) {
-          print('Filtered Add-ons received: ${data.length} items');
-          return data.map((addOn) => AddOn.fromJson(addOn)).toList();
-        }
-        
-        print('Filtered Add-ons not received in expected format, returning empty');
-        return [];
-      } else {
-        String errorMessage = 'Request failed';
-        try {
-          final errorData = json.decode(response.body);
-          errorMessage = errorData['message'] ?? errorMessage;
-        } catch (e) {
-          errorMessage = 'Request failed with status ${response.statusCode}';
-        }
-        throw ApiException(errorMessage, response.statusCode);
-      }
-    } catch (e) {
-      print('Filtered Add-ons API Error: $e - returning empty list');
-      return [];
-    }
-  }
-
-  // Get only global add-ons (available for all menu items)
-  static Future<List<AddOn>> getGlobalAddOns({bool usePublicEndpoint = false}) async {
-    return getFilteredAddOns(
-      usePublicEndpoint: usePublicEndpoint,
-      globalOnly: true,
-      available: true,
-    );
-  }
-
-  // Get add-ons for a specific menu item using the filtered endpoint
-  static Future<List<AddOn>> getAddOnsForMenuItem(int menuItemId, {bool usePublicEndpoint = false}) async {
-    return getFilteredAddOns(
-      usePublicEndpoint: usePublicEndpoint,
-      menuItemId: menuItemId,
-      available: true,
-    );
-  }
 }
