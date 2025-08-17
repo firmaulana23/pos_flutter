@@ -1523,7 +1523,19 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _cogsController = TextEditingController();
+  final _searchController = TextEditingController();
   List<int> _selectedMenuItemIds = [];
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -1531,6 +1543,7 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
     _descriptionController.dispose();
     _priceController.dispose();
     _cogsController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -1621,6 +1634,13 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
                 // Menu Items Selection
                 Consumer<MenuProvider>(
                   builder: (context, menuProvider, child) {
+                    // Filter menu items based on search query
+                    final filteredMenuItems = menuProvider.menuItems.where((item) {
+                      if (_searchQuery.isEmpty) return true;
+                      return item.name.toLowerCase().contains(_searchQuery) ||
+                             (item.category?.name.toLowerCase().contains(_searchQuery) ?? false);
+                    }).toList();
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1638,34 +1658,68 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
                             style: TextStyle(color: Colors.grey),
                           )
                         else
-                          Container(
-                            height: 150,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: ListView.builder(
-                              itemCount: menuProvider.menuItems.length,
-                              itemBuilder: (context, index) {
-                                final menuItem = menuProvider.menuItems[index];
-                                final isSelected = _selectedMenuItemIds.contains(menuItem.id);
-                                
-                                return CheckboxListTile(
-                                  title: Text(menuItem.name),
-                                  subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
-                                  value: isSelected,
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      if (value == true) {
-                                        _selectedMenuItemIds.add(menuItem.id);
-                                      } else {
-                                        _selectedMenuItemIds.remove(menuItem.id);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
-                            ),
+                          Column(
+                            children: [
+                              // Search field
+                              TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  labelText: 'Search menu items',
+                                  hintText: 'Type to search by name or category',
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                        },
+                                      )
+                                    : null,
+                                  border: const OutlineInputBorder(),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Menu items list
+                              Container(
+                                height: 150,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: filteredMenuItems.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        _searchQuery.isNotEmpty 
+                                          ? 'No menu items found matching "$_searchQuery"'
+                                          : 'No menu items available',
+                                        style: const TextStyle(color: Colors.grey),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: filteredMenuItems.length,
+                                      itemBuilder: (context, index) {
+                                        final menuItem = filteredMenuItems[index];
+                                        final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                                        
+                                        return CheckboxListTile(
+                                          title: Text(menuItem.name),
+                                          subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                                          value: isSelected,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              if (value == true) {
+                                                _selectedMenuItemIds.add(menuItem.id);
+                                              } else {
+                                                _selectedMenuItemIds.remove(menuItem.id);
+                                              }
+                                            });
+                                          },
+                                        );
+                                      },
+                                    ),
+                              ),
+                            ],
                           ),
                         const SizedBox(height: 8),
                         Text(
@@ -2052,11 +2106,24 @@ class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
   List<int> _selectedMenuItemIds = [];
   List<MenuItem> _availableMenuItems = [];
   bool _isLoading = true;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadAvailableMenuItems();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadAvailableMenuItems() async {
@@ -2122,27 +2189,76 @@ class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
                   )
                 else
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: _availableMenuItems.length,
-                      itemBuilder: (context, index) {
-                        final menuItem = _availableMenuItems[index];
-                        final isSelected = _selectedMenuItemIds.contains(menuItem.id);
-                        
-                        return CheckboxListTile(
-                          title: Text(menuItem.name),
-                          subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
-                          value: isSelected,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              if (value == true) {
-                                _selectedMenuItemIds.add(menuItem.id);
-                              } else {
-                                _selectedMenuItemIds.remove(menuItem.id);
+                    child: Column(
+                      children: [
+                        // Search field
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            labelText: 'Search menu items',
+                            hintText: 'Type to search by name or category',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Filtered menu items list
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              // Filter menu items based on search query
+                              final filteredMenuItems = _availableMenuItems.where((item) {
+                                if (_searchQuery.isEmpty) return true;
+                                return item.name.toLowerCase().contains(_searchQuery) ||
+                                       (item.category?.name.toLowerCase().contains(_searchQuery) ?? false);
+                              }).toList();
+
+                              if (filteredMenuItems.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    _searchQuery.isNotEmpty 
+                                      ? 'No menu items found matching "$_searchQuery"'
+                                      : 'No menu items available',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                );
                               }
-                            });
-                          },
-                        );
-                      },
+
+                              return ListView.builder(
+                                itemCount: filteredMenuItems.length,
+                                itemBuilder: (context, index) {
+                                  final menuItem = filteredMenuItems[index];
+                                  final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                                  
+                                  return CheckboxListTile(
+                                    title: Text(menuItem.name),
+                                    subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                                    value: isSelected,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          _selectedMenuItemIds.add(menuItem.id);
+                                        } else {
+                                          _selectedMenuItemIds.remove(menuItem.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 8),
@@ -2197,13 +2313,24 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
   List<int> _selectedMenuItemIds = [];
   bool _isLoading = true;
   List<MenuItem> _currentMenuItems = [];
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    // TODO: In a real implementation, you'd fetch the current menu items for this add-on
-    // For now, we'll show all menu items (user needs to know which ones are currently assigned)
     _loadCurrentMenuItems();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadCurrentMenuItems() async {
@@ -2270,27 +2397,76 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
                   )
                 else
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: _currentMenuItems.length,
-                      itemBuilder: (context, index) {
-                        final menuItem = _currentMenuItems[index];
-                        final isSelected = _selectedMenuItemIds.contains(menuItem.id);
-                        
-                        return CheckboxListTile(
-                          title: Text(menuItem.name),
-                          subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
-                          value: isSelected,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              if (value == true) {
-                                _selectedMenuItemIds.add(menuItem.id);
-                              } else {
-                                _selectedMenuItemIds.remove(menuItem.id);
+                    child: Column(
+                      children: [
+                        // Search field
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            labelText: 'Search menu items',
+                            hintText: 'Type to search by name or category',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Filtered menu items list
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              // Filter menu items based on search query
+                              final filteredMenuItems = _currentMenuItems.where((item) {
+                                if (_searchQuery.isEmpty) return true;
+                                return item.name.toLowerCase().contains(_searchQuery) ||
+                                       (item.category?.name.toLowerCase().contains(_searchQuery) ?? false);
+                              }).toList();
+
+                              if (filteredMenuItems.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    _searchQuery.isNotEmpty 
+                                      ? 'No menu items found matching "$_searchQuery"'
+                                      : 'No menu items available',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                );
                               }
-                            });
-                          },
-                        );
-                      },
+
+                              return ListView.builder(
+                                itemCount: filteredMenuItems.length,
+                                itemBuilder: (context, index) {
+                                  final menuItem = filteredMenuItems[index];
+                                  final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                                  
+                                  return CheckboxListTile(
+                                    title: Text(menuItem.name),
+                                    subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                                    value: isSelected,
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          _selectedMenuItemIds.add(menuItem.id);
+                                        } else {
+                                          _selectedMenuItemIds.remove(menuItem.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 8),
