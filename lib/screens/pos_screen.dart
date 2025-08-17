@@ -144,10 +144,71 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
         builder: (context, cartProvider, child) {
           if (cartProvider.isEmpty) return const SizedBox.shrink();
 
-          return FloatingActionButton.extended(
-            onPressed: () => _showCartBottomSheet(context),
-            icon: const Icon(Icons.shopping_cart),
-            label: Text(AppFormatters.formatCurrency(cartProvider.total)),
+          return AnimatedScale(
+            scale: cartProvider.isEmpty ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.elasticOut,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                onPressed: () => _showCartBottomSheet(context),
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                elevation: 0,
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.shopping_cart_rounded, size: 24),
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${cartProvider.itemCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      AppFormatters.formatCurrency(cartProvider.total),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -155,40 +216,93 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Cari menu...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.inputBorder),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.inputBorder),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _searchQuery.isNotEmpty ? AppColors.primary : AppColors.inputBorder,
+                  width: _searchQuery.isNotEmpty ? 1.5 : 1,
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Cari menu favorit Anda...',
+                  hintStyle: TextStyle(
+                    color: AppColors.disabled,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: _searchQuery.isNotEmpty ? AppColors.primary : AppColors.disabled,
+                    size: 22,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                          tooltip: 'Hapus pencarian',
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                textInputAction: TextInputAction.search,
+                style: const TextStyle(fontSize: 14),
+                onSubmitted: (value) {
+                  FocusScope.of(context).unfocus();
+                },
+              ),
+            ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [AppStyles.defaultShadow],
+            ),
+            child: IconButton(
+              onPressed: () {
+                setState(() {
+                  _showSearchBar = false;
+                  _searchController.clear();
+                  _searchQuery = '';
+                });
+              },
+              icon: const Icon(
+                Icons.close_rounded,
+                color: AppColors.onPrimary,
+                size: 20,
+              ),
+              tooltip: 'Tutup pencarian',
+            ),
           ),
-          filled: true,
-          fillColor: AppColors.surface,
-        ),
-        textInputAction: TextInputAction.search,
-        onSubmitted: (value) {
-          // Focus will be lost automatically, triggering search
-        },
+        ],
       ),
     );
   }
@@ -206,31 +320,85 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     final categoriesWithAll = [allCategoriesOption, ...categories];
     
     return Container(
-      height: 50,
+      height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.divider,
+            width: 0.5,
+          ),
+        ),
+      ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
         itemCount: categoriesWithAll.length,
         itemBuilder: (context, index) {
           final category = categoriesWithAll[index];
           final isSelected = index == _selectedCategoryIndex;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(category.name),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategoryIndex = index;
-                });
-              },
-              backgroundColor: AppColors.surfaceVariant,
-              selectedColor: AppColors.primary,
-              labelStyle: TextStyle(
-                color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
-                fontWeight: FontWeight.w500,
+            padding: const EdgeInsets.only(right: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedCategoryIndex = index;
+                  });
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : AppColors.background,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.inputBorder,
+                      width: 1.5,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (index == 0) ...[
+                        Icon(
+                          Icons.grid_view_rounded,
+                          size: 16,
+                          color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
+                        ),
+                        const SizedBox(width: 6),
+                      ] else if (isSelected) ...[
+                        Icon(
+                          Icons.restaurant_menu_rounded,
+                          size: 16,
+                          color: AppColors.onPrimary,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        category.name,
+                        style: TextStyle(
+                          color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           );
@@ -308,91 +476,202 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     final category = menuProvider.getCategoryById(menuItem.categoryId);
     final showCategory = _selectedCategoryIndex == 0 || _searchQuery.isNotEmpty;
     
-    return CustomCard(
-      onTap: () => _addToCart(menuItem),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Menu Item Image
-          Container(
-            height: 120,
-            width: double.infinity,
+    return Hero(
+      tag: 'menu-item-${menuItem.id}',
+      child: Card(
+        elevation: 3,
+        shadowColor: AppColors.cardShadow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          onTap: () => _addToCart(menuItem),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  AppColors.background.withValues(alpha: 0.5),
+                ],
+              ),
             ),
-            child: menuItem.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      menuItem.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholderImage();
-                      },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Menu Item Image with enhanced design
+                  Stack(
+                    children: [
+                      Container(
+                        height: 130,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.cardShadow,
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: menuItem.imageUrl != null
+                              ? Image.network(
+                                  menuItem.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildShimmerImage();
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return _buildPlaceholderImage();
+                                  },
+                                )
+                              : _buildPlaceholderImage(),
+                        ),
+                      ),
+                      // Availability indicator
+                      if (!menuItem.isAvailable)
+                        Container(
+                          height: 130,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Habis',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Category badge
+                      if (showCategory && category != null)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              category.name,
+                              style: const TextStyle(
+                                color: AppColors.onPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Menu Item Name
+                  Text(
+                    menuItem.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onSurface,
                     ),
-                  )
-                : _buildPlaceholderImage(),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Category badge (show when displaying all categories or searching)
-          if (showCategory && category != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                category.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  
+                  if (menuItem.description != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      menuItem.description!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.onSurface.withValues(alpha: 0.6),
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Price and Add Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            AppFormatters.formatCurrency(menuItem.price),
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: menuItem.isAvailable ? () => _addToCart(menuItem) : null,
+                          icon: const Icon(
+                            Icons.add_rounded,
+                            color: AppColors.onPrimary,
+                            size: 20,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Tambah ke keranjang',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-          ],
-          
-          // Menu Item Name
-          Text(
-            menuItem.name,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-          
-          if (menuItem.description != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              menuItem.description!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurface.withValues(alpha: 0.7),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          
-          const SizedBox(height: 8),
-          
-          // Price
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              PriceTag(price: AppFormatters.formatCurrency(menuItem.price)),
-              const Icon(
-                Icons.add_circle,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -400,14 +679,54 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surfaceVariant,
+            AppColors.background,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: Icon(
-          Icons.restaurant,
-          size: 40,
-          color: AppColors.disabled,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restaurant_rounded,
+              size: 48,
+              color: AppColors.disabled,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Gambar menu',
+              style: TextStyle(
+                color: AppColors.disabled,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerImage() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
         ),
       ),
     );
@@ -416,14 +735,21 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
   void _addToCart(MenuItem menuItem) async {
     final menuProvider = context.read<MenuProvider>();
     
+    debugPrint('POSScreen: Adding ${menuItem.name} to cart, id: ${menuItem.id}');
+    
     try {
       // Load add-ons specific to this menu item
+      debugPrint('POSScreen: Loading add-ons for menu item ${menuItem.id}');
       await menuProvider.loadMenuItemAddOns(menuItem.id, usePublicEndpoint: true);
       final availableAddOns = menuProvider.menuItemAddOns;
 
+      debugPrint('POSScreen: Found ${availableAddOns.length} add-ons for ${menuItem.name}');
+      
       if (availableAddOns.isNotEmpty) {
+        debugPrint('POSScreen: Showing add-on selection dialog');
         _showAddOnSelectionDialog(menuItem, availableAddOns);
       } else {
+        debugPrint('POSScreen: No add-ons found, adding item directly to cart');
         context.read<CartProvider>().addItem(menuItem);
         _showSnackBar('${menuItem.name} ditambahkan ke keranjang');
       }

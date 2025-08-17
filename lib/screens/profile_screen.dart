@@ -79,7 +79,7 @@ class ProfileScreen extends StatelessWidget {
           Text(
             user.email,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurface.withOpacity(0.7),
+              color: AppColors.onSurface.withValues(alpha: 0.7),
             ),
           ),
           
@@ -151,7 +151,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurface.withOpacity(0.7),
+                    color: AppColors.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(

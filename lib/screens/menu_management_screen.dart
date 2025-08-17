@@ -2050,6 +2050,34 @@ class AddMenuItemsToAddOnDialog extends StatefulWidget {
 
 class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
   List<int> _selectedMenuItemIds = [];
+  List<MenuItem> _availableMenuItems = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvailableMenuItems();
+  }
+
+  void _loadAvailableMenuItems() async {
+    try {
+      final menuProvider = context.read<MenuProvider>();
+      final availableItems = await menuProvider.getAvailableMenuItemsForAddOn(widget.addOnId, usePublicEndpoint: true);
+      
+      if (mounted) {
+        setState(() {
+          _availableMenuItems = availableItems;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2058,49 +2086,65 @@ class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
       content: SizedBox(
         width: 400,
         height: 400,
-        child: Consumer<MenuProvider>(
-          builder: (context, menuProvider, child) {
-            if (menuProvider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (menuProvider.menuItems.isEmpty) {
-              return const Center(
-                child: Text('No menu items available'),
-              );
-            }
-
-            return Column(
+        child: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                Text(
-                  'Select menu items to add to this add-on:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: menuProvider.menuItems.length,
-                    itemBuilder: (context, index) {
-                      final menuItem = menuProvider.menuItems[index];
-                      final isSelected = _selectedMenuItemIds.contains(menuItem.id);
-                      
-                      return CheckboxListTile(
-                        title: Text(menuItem.name),
-                        subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
-                        value: isSelected,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedMenuItemIds.add(menuItem.id);
-                            } else {
-                              _selectedMenuItemIds.remove(menuItem.id);
-                            }
-                          });
-                        },
-                      );
-                    },
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Only showing menu items not already assigned to this add-on.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                if (_availableMenuItems.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text('All menu items are already assigned to this add-on'),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _availableMenuItems.length,
+                      itemBuilder: (context, index) {
+                        final menuItem = _availableMenuItems[index];
+                        final isSelected = _selectedMenuItemIds.contains(menuItem.id);
+                        
+                        return CheckboxListTile(
+                          title: Text(menuItem.name),
+                          subtitle: Text('${menuItem.category?.name ?? 'No Category'} - ${AppFormatters.formatCurrency(menuItem.price)}'),
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _selectedMenuItemIds.add(menuItem.id);
+                              } else {
+                                _selectedMenuItemIds.remove(menuItem.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   '${_selectedMenuItemIds.length} menu item(s) selected',
@@ -2110,9 +2154,7 @@ class _AddMenuItemsToAddOnDialogState extends State<AddMenuItemsToAddOnDialog> {
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
       ),
       actions: [
         TextButton(
@@ -2164,14 +2206,25 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
     _loadCurrentMenuItems();
   }
 
-  void _loadCurrentMenuItems() {
-    // Placeholder: In real implementation, you'd call an API to get menu items for this add-on
-    // For now, we'll use all menu items as a demo
-    final menuProvider = context.read<MenuProvider>();
-    setState(() {
-      _currentMenuItems = menuProvider.menuItems;
-      _isLoading = false;
-    });
+  void _loadCurrentMenuItems() async {
+    try {
+      final menuProvider = context.read<MenuProvider>();
+      final currentItems = await menuProvider.loadAddOnMenuItems(widget.addOnId, usePublicEndpoint: true);
+      
+      if (mounted) {
+        setState(() {
+          _currentMenuItems = currentItems;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentMenuItems = [];
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -2188,9 +2241,9 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -2198,7 +2251,7 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Select menu items to remove from this add-on. Note: An add-on must be assigned to at least one menu item.',
+                          'Only showing menu items currently assigned to this add-on.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.orange[700],
@@ -2212,7 +2265,7 @@ class _RemoveMenuItemsFromAddOnDialogState extends State<RemoveMenuItemsFromAddO
                 if (_currentMenuItems.isEmpty)
                   const Expanded(
                     child: Center(
-                      child: Text('No menu items currently assigned to this add-on'),
+                      child: Text('No menu items are currently assigned to this add-on'),
                     ),
                   )
                 else

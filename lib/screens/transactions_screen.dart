@@ -78,96 +78,281 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       ),
       body: Column(
         children: [
-          // Date filter UI
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+          // Enhanced Date filter UI
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cardShadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _startDate ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _startDate = picked;
-                        });
-                        // Auto-apply filter when date is selected
-                        _applyDateFilter();
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Dari tanggal',
-                        border: OutlineInputBorder(),
-                        isDense: true,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.filter_list_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Filter Transaksi',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
                       ),
-                      child: Text(_startDate != null
-                          ? AppFormatters.formatDate(_startDate!)
-                          : 'Pilih tanggal'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _startDate != null ? AppColors.primary : AppColors.inputBorder,
+                            width: _startDate != null ? 1.5 : 1,
+                          ),
+                        ),
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _startDate ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: Theme.of(context).colorScheme.copyWith(
+                                      primary: AppColors.primary,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _startDate = picked;
+                              });
+                              _applyDateFilter();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  color: _startDate != null ? AppColors.primary : AppColors.disabled,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Dari Tanggal',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.onSurface.withValues(alpha: 0.6),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _startDate != null
+                                            ? AppFormatters.formatDate(_startDate!)
+                                            : 'Pilih tanggal mulai',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: _startDate != null ? AppColors.onSurface : AppColors.disabled,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _endDate != null ? AppColors.primary : AppColors.inputBorder,
+                            width: _endDate != null ? 1.5 : 1,
+                          ),
+                        ),
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _endDate ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: Theme.of(context).colorScheme.copyWith(
+                                      primary: AppColors.primary,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _endDate = picked;
+                              });
+                              _applyDateFilter();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  color: _endDate != null ? AppColors.primary : AppColors.disabled,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Sampai Tanggal',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.onSurface.withValues(alpha: 0.6),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _endDate != null
+                                            ? AppFormatters.formatDate(_endDate!)
+                                            : 'Pilih tanggal akhir',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: _endDate != null ? AppColors.onSurface : AppColors.disabled,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_startDate != null || _endDate != null) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: EnhancedButton(
+                      text: 'Reset Filter',
+                      icon: Icons.clear_rounded,
+                      backgroundColor: AppColors.error,
+                      onPressed: () {
+                        setState(() {
+                          _startDate = null;
+                          _endDate = null;
+                        });
+                        _applyDateFilter();
+                      },
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _endDate ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _endDate = picked;
-                        });
-                        // Auto-apply filter when date is selected
-                        _applyDateFilter();
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Sampai tanggal',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      child: Text(_endDate != null
-                          ? AppFormatters.formatDate(_endDate!)
-                          : 'Pilih tanggal'),
-                    ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.inputBorder),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: AppColors.onPrimary,
+              unselectedLabelColor: AppColors.onSurface,
+              indicator: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.list_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Semua'),
+                    ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  tooltip: 'Reset filter',
-                  onPressed: () {
-                    setState(() {
-                      _startDate = null;
-                      _endDate = null;
-                    });
-                    // Reset to today's transactions when clearing filter
-                    _applyDateFilter();
-                  },
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.pending_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Pending'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Lunas'),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.disabled,
-            indicatorColor: AppColors.primary,
-            tabs: const [
-              Tab(text: 'Semua'),
-              Tab(text: 'Pending'),
-              Tab(text: 'Lunas'),
-            ],
-          ),
+          const SizedBox(height: 16),
           Expanded(
             child: Consumer<TransactionProvider>(
               builder: (context, transactionProvider, child) {

@@ -122,6 +122,39 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
+  // Load menu items associated with a specific add-on
+  Future<List<menu_models.MenuItem>> loadAddOnMenuItems(int addOnId, {bool usePublicEndpoint = true}) async {
+    try {
+      print('MenuProvider: Loading menu items for add-on #$addOnId');
+      
+      final menuItems = await ApiService.getAddOnMenuItems(addOnId, usePublicEndpoint: usePublicEndpoint);
+      print('MenuProvider: Loaded ${menuItems.length} menu items for add-on #$addOnId');
+      
+      return menuItems;
+    } catch (e) {
+      print('MenuProvider: Error loading menu items for add-on: $e');
+      return [];
+    }
+  }
+
+  // Get menu items that are NOT associated with a specific add-on
+  Future<List<menu_models.MenuItem>> getAvailableMenuItemsForAddOn(int addOnId, {bool usePublicEndpoint = true}) async {
+    try {
+      final allMenuItems = _menuItems;
+      final addOnMenuItems = await loadAddOnMenuItems(addOnId, usePublicEndpoint: usePublicEndpoint);
+      final addOnMenuItemIds = addOnMenuItems.map((item) => item.id).toSet();
+      
+      // Filter out menu items that are already in the add-on
+      final availableItems = allMenuItems.where((item) => !addOnMenuItemIds.contains(item.id)).toList();
+      
+      print('MenuProvider: Found ${availableItems.length} available menu items for add-on #$addOnId');
+      return availableItems;
+    } catch (e) {
+      print('MenuProvider: Error getting available menu items for add-on: $e');
+      return _menuItems; // Fallback to all menu items
+    }
+  }
+
   // Add menu items to an existing add-on
   Future<bool> addMenuItemsToAddOn(int addOnId, List<int> menuItemIds) async {
     try {

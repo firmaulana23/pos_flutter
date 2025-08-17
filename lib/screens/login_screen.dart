@@ -45,27 +45,43 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppStyles.defaultPadding,
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-              
-              // App Logo and Title
-              _buildHeader(),
-              
-              const SizedBox(height: 60),
-              
-              // Login Form
-              _buildLoginForm(),
-              
-              const SizedBox(height: 40),
-              
-              // Demo Account Info
-              // _buildDemoAccountInfo(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withValues(alpha: 0.1),
+              AppColors.background,
+              AppColors.secondary.withValues(alpha: 0.05),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // App Logo and Title
+                    _buildHeader(),
+                    
+                    const SizedBox(height: 48),
+                    
+                    // Login Form
+                    _buildLoginForm(),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Footer
+                    _buildFooter(),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -101,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'Point of Sale System',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.primary.withOpacity(0.7),
+            color: AppColors.primary.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -111,11 +127,33 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLoginForm() {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        return Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        return Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.cardShadow,
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Masuk ke Akun Anda',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
               // Username Field
               TextFormField(
                 controller: _usernameController,
@@ -178,9 +216,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -226,44 +264,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
+        ),
         );
       },
     );
   }
-
-  Widget _buildDemoAccountInfo() {
-    return CustomCard(
-      color: AppColors.info.withOpacity(0.1),
-      border: BorderSide(color: AppColors.info.withOpacity(0.3)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: AppColors.info,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Demo Accounts',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.info,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildDemoAccount('Admin', 'admin@pos.com', 'admin123'),
-          _buildDemoAccount('Manager', 'manager@pos.com', 'manager123'),
-          _buildDemoAccount('Cashier', 'cashier@pos.com', 'cashier123'),
-        ],
-      ),
-    );
-  }
-
+  
   Widget _buildDemoAccount(String role, String username, String password) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -307,6 +313,28 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        Text(
+          'Dibuat dengan ❤️ untuk bisnis Anda',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.onBackground.withValues(alpha: 0.5),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'v1.0.0',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.onBackground.withValues(alpha: 0.3),
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -750,4 +750,52 @@ class ApiService {
     }
   }
 
+  // Get menu items associated with a specific add-on
+  static Future<List<MenuItem>> getAddOnMenuItems(int addOnId, {bool usePublicEndpoint = true}) async {
+    try {
+      final url = usePublicEndpoint 
+          ? '$publicBaseUrl/add-ons/$addOnId'
+          : '$baseUrl/add-ons/$addOnId';
+      
+      print('Add-on Menu Items API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: await _getHeaders(includeAuth: !usePublicEndpoint),
+      );
+
+      print('Add-on Menu Items API: Response status: ${response.statusCode}');
+      print('Add-on Menu Items API: Response body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.body.isEmpty) return [];
+        final jsonData = json.decode(response.body);
+        
+        print('Add-on Menu Items API Response: $jsonData');
+        
+        // API returns add-on data with menu_items array
+        if (jsonData is Map<String, dynamic> && jsonData['menu_items'] is List) {
+          final data = jsonData['menu_items'] as List;
+          print('Add-on Menu Items received: ${data.length} items');
+          return data.map((menuItem) => MenuItem.fromJson(menuItem)).toList();
+        }
+        
+        print('Add-on Menu Items not received in expected format, returning empty');
+        return [];
+      } else {
+        String errorMessage = 'Request failed';
+        try {
+          final errorData = json.decode(response.body);
+          errorMessage = errorData['message'] ?? errorMessage;
+        } catch (e) {
+          errorMessage = 'Request failed with status ${response.statusCode}';
+        }
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Add-on Menu Items API Error: $e - returning empty list');
+      return [];
+    }
+  }
+
 }
