@@ -268,6 +268,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
       }
     }
 
+    // Sort menu items alphabetically (A-Z)
+    menuItems.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
     if (menuItems.isEmpty) {
       String emptyMessage;
       if (_searchQuery.isNotEmpty) {

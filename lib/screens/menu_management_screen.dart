@@ -821,7 +821,8 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
 
     final nameController = TextEditingController(text: item?.name ?? '');
     final descriptionController = TextEditingController(text: item?.description ?? '');
-    final priceController = TextEditingController(text: item?.price.toString() ?? '');
+    final priceController = TextEditingController(text: item?.price.toStringAsFixed(0) ?? '');
+    final cogsController = TextEditingController(text: item?.cogs.toStringAsFixed(0) ?? '');
     int? selectedCategoryId = item?.categoryId ?? selectedCategory ?? menuProvider.categories.first.id;
 
     showDialog(
@@ -874,6 +875,18 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                   decoration: const InputDecoration(
                     labelText: 'Price',
                     border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: cogsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cost of Goods Sold (COGS)',
+                    border: OutlineInputBorder(),
+                    prefixText: 'Rp ',
+                    helperText: 'Cost to make this item',
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -889,12 +902,14 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
               onPressed: () async {
                 if (nameController.text.trim().isEmpty ||
                     selectedCategoryId == null ||
-                    priceController.text.trim().isEmpty) {
+                    priceController.text.trim().isEmpty ||
+                    cogsController.text.trim().isEmpty) {
                   return;
                 }
 
                 final price = double.tryParse(priceController.text.trim());
-                if (price == null || price < 0) return;
+                final cogs = double.tryParse(cogsController.text.trim());
+                if (price == null || price < 0 || cogs == null || cogs < 0) return;
 
                 if (item == null) {
                   await menuProvider.createMenuItem(
@@ -902,7 +917,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                     categoryId: selectedCategoryId!,
                     description: descriptionController.text.trim(),
                     price: price,
-                    cogs: price * 0.3, // Simplified COGS calculation
+                    cogs: cogs,
                   );
                 } else {
                   await menuProvider.updateMenuItem(
@@ -911,6 +926,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
                     selectedCategoryId!,
                     descriptionController.text.trim(),
                     price,
+                    cogs,
                     item.isAvailable,
                   );
                 }
@@ -1026,6 +1042,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen>
       item.categoryId,
       item.description ?? '',
       item.price,
+      item.cogs,
       !item.isAvailable,
     );
   }
@@ -1381,7 +1398,7 @@ class _CreateMenuItemDialogState extends State<CreateMenuItemDialog> {
                     border: OutlineInputBorder(),
                     prefixText: 'Rp ',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Price is required';
@@ -1404,7 +1421,7 @@ class _CreateMenuItemDialogState extends State<CreateMenuItemDialog> {
                     prefixText: 'Rp ',
                     helperText: 'Cost to make this item',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'COGS is required';
@@ -1553,7 +1570,7 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
                     border: OutlineInputBorder(),
                     prefixText: 'Rp ',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Price is required';
@@ -1576,7 +1593,7 @@ class _CreateAddOnDialogState extends State<CreateAddOnDialog> {
                     prefixText: 'Rp ',
                     helperText: 'Cost to make this add-on',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'COGS is required';
@@ -1757,8 +1774,8 @@ class _EditAddOnDialogState extends State<EditAddOnDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.addOn.name);
     _descriptionController = TextEditingController(text: widget.addOn.description ?? '');
-    _priceController = TextEditingController(text: widget.addOn.price.toString());
-    _cogsController = TextEditingController(text: widget.addOn.cogs?.toString() ?? '0.0');
+    _priceController = TextEditingController(text: widget.addOn.price.toStringAsFixed(0));
+    _cogsController = TextEditingController(text: widget.addOn.cogs?.toStringAsFixed(0) ?? '0');
     _isAvailable = widget.addOn.isAvailable;
   }
 
@@ -1807,7 +1824,7 @@ class _EditAddOnDialogState extends State<EditAddOnDialog> {
                     border: OutlineInputBorder(),
                     prefixText: 'Rp ',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Price is required';
@@ -1829,7 +1846,7 @@ class _EditAddOnDialogState extends State<EditAddOnDialog> {
                     border: OutlineInputBorder(),
                     prefixText: 'Rp ',
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'COGS is required';

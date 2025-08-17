@@ -351,7 +351,7 @@ class MenuProvider with ChangeNotifier {
 
   // MenuItem CRUD methods - removed duplicate, keeping the first version
 
-  Future<void> updateMenuItem(int id, String name, int categoryId, String description, double price, bool isAvailable) async {
+  Future<void> updateMenuItem(int id, String name, int categoryId, String description, double price, double cogs, bool isAvailable) async {
     try {
       _setLoading(true);
       _setError(null);
@@ -361,6 +361,7 @@ class MenuProvider with ChangeNotifier {
         'category_id': categoryId,
         'description': description,
         'price': price,
+        'cogs': cogs,
         'is_available': isAvailable,
       };
 
@@ -372,6 +373,7 @@ class MenuProvider with ChangeNotifier {
           categoryId: categoryId,
           description: description,
           price: price,
+          cogs: cogs,
           isAvailable: isAvailable,
         );
         notifyListeners();
