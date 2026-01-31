@@ -579,8 +579,28 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
   }
 }
 
-class CartBottomSheet extends StatelessWidget {
+class CartBottomSheet extends StatefulWidget {
   const CartBottomSheet({super.key});
+
+  @override
+  State<CartBottomSheet> createState() => _CartBottomSheetState();
+}
+
+class _CartBottomSheetState extends State<CartBottomSheet> {
+  final _discountController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final cartProvider = context.read<CartProvider>();
+    _discountController.text = cartProvider.manualDiscountPercentage.toStringAsFixed(0);
+  }
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -777,7 +797,10 @@ class CartBottomSheet extends StatelessWidget {
               ),
               
               const SizedBox(height: 8),
-              
+
+              // Member & Promo Section
+              _buildMemberPromoSection(context, cartProvider),
+
               // Tax input
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -811,11 +834,11 @@ class CartBottomSheet extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Diskon'),
+                  const Text('Diskon Manual'),
                   SizedBox(
                     width: 120,
                     child: TextFormField(
-                      initialValue: cartProvider.discount.toStringAsFixed(0),
+                      controller: _discountController,
                       textAlign: TextAlign.right,
                       keyboardType: TextInputType.number,
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -823,7 +846,7 @@ class CartBottomSheet extends StatelessWidget {
                         isDense: true,
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        prefixText: 'Rp ',
+                        suffixText: '%',
                       ),
                       onChanged: (value) {
                         final discount = double.tryParse(value) ?? 0.0;
@@ -837,7 +860,44 @@ class CartBottomSheet extends StatelessWidget {
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
+
+              // Applied Discounts
+              if (cartProvider.memberDiscount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Diskon Member (${cartProvider.member?.fullName})'),
+                      Text('- ${AppFormatters.formatCurrency(cartProvider.memberDiscount)}', style: const TextStyle(color: AppColors.success)),
+                    ],
+                  ),
+                ),
+
+              if (cartProvider.promoDiscount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Diskon Promo (${cartProvider.promo?.name})'),
+                      Text('- ${AppFormatters.formatCurrency(cartProvider.promoDiscount)}', style: const TextStyle(color: AppColors.success)),
+                    ],
+                  ),
+                ),
               
+               if (cartProvider.discount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Diskon Manual'),
+                      Text('- ${AppFormatters.formatCurrency(cartProvider.discount)}', style: const TextStyle(color: AppColors.success)),
+                    ],
+                  ),
+                ),
+
               // Total
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -882,6 +942,123 @@ class CartBottomSheet extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMemberPromoSection(BuildContext context, CartProvider cartProvider) {
+    final memberController = TextEditingController();
+    final promoController = TextEditingController();
+
+    return Column(
+      children: [
+        if (cartProvider.member == null)
+          _buildCodeInput(
+            context,
+            controller: memberController,
+            hintText: 'Kode Member',
+            onApply: () async {
+              if (memberController.text.isNotEmpty) {
+                await cartProvider.applyMember(memberController.text);
+              }
+            },
+            isLoading: cartProvider.isLoading,
+          )
+        else
+          _buildAppliedCodeInfo(
+            context,
+            title: 'Member: ${cartProvider.member!.fullName}',
+            subtitle: 'Member applied',
+            onRemove: () => cartProvider.removeMember(),
+          ),
+
+        if (cartProvider.promo == null)
+          _buildCodeInput(
+            context,
+            controller: promoController,
+            hintText: 'Kode Promo',
+            onApply: () async {
+              if (promoController.text.isNotEmpty) {
+                await cartProvider.applyPromo(promoController.text);
+              }
+            },
+            isLoading: cartProvider.isLoading,
+          )
+        else
+          _buildAppliedCodeInfo(
+            context,
+            title: cartProvider.promo!.name,
+            subtitle: 'Diskon ${AppFormatters.formatCurrency(cartProvider.promoDiscount)} diterapkan',
+            onRemove: () => cartProvider.removePromo(),
+          ),
+        
+        if (cartProvider.validationError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+            child: Text(
+              cartProvider.validationError!,
+              style: const TextStyle(color: AppColors.error),
+            ),
+          ),
+        
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildCodeInput(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String hintText,
+    required VoidCallback onApply,
+    bool isLoading = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: TextFormField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 40,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : onApply,
+              child: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Apply'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppliedCodeInfo(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required VoidCallback onRemove,
+  }) {
+    return ListTile(
+      leading: const Icon(Icons.check_circle, color: AppColors.success),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(subtitle),
+      trailing: IconButton(
+        icon: const Icon(Icons.remove_circle, color: AppColors.error),
+        onPressed: onRemove,
+      ),
+      dense: true,
+      contentPadding: EdgeInsets.zero,
     );
   }
 

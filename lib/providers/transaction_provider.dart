@@ -111,6 +111,8 @@ class TransactionProvider with ChangeNotifier {
         subTotal: updatedTransaction.subTotal,
         tax: updatedTransaction.tax,
         discount: updatedTransaction.discount,
+        memberDiscount: updatedTransaction.memberDiscount,
+        promoDiscount: updatedTransaction.promoDiscount,
         total: updatedTransaction.total,
         paymentMethod: updatedTransaction.paymentMethod,
         userId: updatedTransaction.userId,

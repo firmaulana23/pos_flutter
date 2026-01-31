@@ -5,6 +5,8 @@ import '../models/user.dart';
 import '../models/menu.dart';
 import '../models/transaction.dart';
 import '../models/dashboard.dart';
+import '../models/member.dart';
+import '../models/promo.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -17,8 +19,8 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.175:8080/api/v1';
-  static const String publicBaseUrl = 'http://192.168.100.175:8080/api/v1/public';
+  static const String baseUrl = 'http://192.168.100.105:8080/api/v1';
+  static const String publicBaseUrl = 'http://192.168.100.105:8080/api/v1/public';
   
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
@@ -384,6 +386,36 @@ class ApiService {
     }
   }
 
+  // Member & Promo API
+  static Future<Member> validateMember(String cardNumber) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/members/validate?card_number=$cardNumber'),
+      headers: await _getHeaders(),
+    );
+
+    final data = _handleResponse(response);
+    if (data['success'] == true && data['data'] != null) {
+      return Member.fromJson(data['data']);
+    } else {
+      throw ApiException(data['message'] ?? 'Invalid member code');
+    }
+  }
+
+  static Future<Promo> validatePromo(String promoCode) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/promos/validate?code=$promoCode'),
+      headers: await _getHeaders(),
+    );
+
+    final data = _handleResponse(response);
+    
+    if (data['success'] == true && data['data'] != null) {
+      return Promo.fromJson(data['data']);
+    } else {
+      throw ApiException(data['message'] ?? 'Invalid promo code');
+    }
+  }
+
   static Future<List<Transaction>> getTransactions() async {
     final response = await http.get(
       Uri.parse('$baseUrl/transactions'),
@@ -421,7 +453,6 @@ class ApiService {
       headers: await _getHeaders(),
       body: json.encode(transactionData),
     );
-
     final data = _handleResponse(response);
     return Transaction.fromJson(data);
   }

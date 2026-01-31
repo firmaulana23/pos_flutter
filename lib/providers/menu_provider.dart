@@ -299,12 +299,18 @@ class MenuProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
+      // The API expects a list of IDs, even for a single or global add-on.
+      final List<int> menuItemIdsList = [];
+      if (menuItemId != null) {
+        menuItemIdsList.add(menuItemId);
+      }
+
       final addOnData = {
         'name': name,
         'price': price,
         'cogs': cogs,
+        'MenuItemIDs': menuItemIdsList, // Use PascalCase and send a list
         if (description != null) 'description': description,
-        if (menuItemId != null) 'menu_item_id': menuItemId,
       };
 
       final newAddOn = await ApiService.createAddOn(addOnData);

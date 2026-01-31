@@ -3,7 +3,7 @@ import 'user.dart';
 
 class TransactionItem {
   final int? id;
-  final int transactionId;
+  final int? transactionId;
   final int menuItemId;
   final int quantity;
   final double price;
@@ -12,7 +12,7 @@ class TransactionItem {
 
   TransactionItem({
     this.id,
-    required this.transactionId,
+    this.transactionId,
     required this.menuItemId,
     required this.quantity,
     required this.price,
@@ -54,7 +54,7 @@ class TransactionItem {
 
 class TransactionAddOn {
   final int? id;
-  final int transactionItemId;
+  final int? transactionItemId;
   final int addOnId;
   final int quantity;
   final double price;
@@ -62,7 +62,7 @@ class TransactionAddOn {
 
   TransactionAddOn({
     this.id,
-    required this.transactionItemId,
+    this.transactionItemId,
     required this.addOnId,
     required this.quantity,
     required this.price,
@@ -138,6 +138,8 @@ class Transaction {
   final double subTotal;
   final double tax;
   final double discount;
+  final double memberDiscount;
+  final double promoDiscount;
   final double total;
   final String? paymentMethod; // Payment method as string from API
   final int? userId;
@@ -156,6 +158,8 @@ class Transaction {
     required this.subTotal,
     required this.tax,
     required this.discount,
+    required this.memberDiscount,
+    required this.promoDiscount,
     required this.total,
     this.paymentMethod,
     this.userId,
@@ -175,7 +179,9 @@ class Transaction {
       status: json['status'],
       subTotal: (json['sub_total'] as num).toDouble(),
       tax: (json['tax'] as num).toDouble(),
-      discount: (json['discount'] as num).toDouble(),
+      discount: (json['discount'] as num? ?? 0.0).toDouble(),
+      memberDiscount: (json['member_discount'] as num? ?? 0.0).toDouble(),
+      promoDiscount: (json['promo_discount'] as num? ?? 0.0).toDouble(),
       total: (json['total'] as num).toDouble(),
       paymentMethod: json['payment_method'], // String from API
       userId: json['user_id'],
