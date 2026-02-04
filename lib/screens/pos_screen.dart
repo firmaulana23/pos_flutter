@@ -588,6 +588,8 @@ class CartBottomSheet extends StatefulWidget {
 
 class _CartBottomSheetState extends State<CartBottomSheet> {
   final _discountController = TextEditingController();
+  final _memberController = TextEditingController();
+  final _promoController = TextEditingController();
 
   @override
   void initState() {
@@ -599,6 +601,8 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
   @override
   void dispose() {
     _discountController.dispose();
+    _memberController.dispose();
+    _promoController.dispose();
     super.dispose();
   }
 
@@ -946,19 +950,19 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
   }
 
   Widget _buildMemberPromoSection(BuildContext context, CartProvider cartProvider) {
-    final memberController = TextEditingController();
-    final promoController = TextEditingController();
-
     return Column(
       children: [
         if (cartProvider.member == null)
           _buildCodeInput(
             context,
-            controller: memberController,
+            controller: _memberController,
             hintText: 'Kode Member',
             onApply: () async {
-              if (memberController.text.isNotEmpty) {
-                await cartProvider.applyMember(memberController.text);
+              if (_memberController.text.isNotEmpty) {
+                final success = await cartProvider.applyMember(_memberController.text);
+                if (success) {
+                  _memberController.clear();
+                }
               }
             },
             isLoading: cartProvider.isLoading,
@@ -967,18 +971,21 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
           _buildAppliedCodeInfo(
             context,
             title: 'Member: ${cartProvider.member!.fullName}',
-            subtitle: 'Member applied',
+            subtitle: 'Points: ${cartProvider.member!.points}',
             onRemove: () => cartProvider.removeMember(),
           ),
 
         if (cartProvider.promo == null)
           _buildCodeInput(
             context,
-            controller: promoController,
+            controller: _promoController,
             hintText: 'Kode Promo',
             onApply: () async {
-              if (promoController.text.isNotEmpty) {
-                await cartProvider.applyPromo(promoController.text);
+              if (_promoController.text.isNotEmpty) {
+                final success = await cartProvider.applyPromo(_promoController.text);
+                if (success) {
+                  _promoController.clear();
+                }
               }
             },
             isLoading: cartProvider.isLoading,
