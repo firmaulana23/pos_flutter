@@ -6,14 +6,16 @@ class MenuProvider with ChangeNotifier {
   List<menu_models.Category> _categories = [];
   List<menu_models.MenuItem> _menuItems = [];
   List<menu_models.AddOn> _addOns = [];
-  List<menu_models.AddOn> _menuItemAddOns = []; // Store add-ons for specific menu item
+  List<menu_models.AddOn> _menuItemAddOns =
+      []; // Store add-ons for specific menu item
   bool _isLoading = false;
   String? _error;
 
   List<menu_models.Category> get categories => _categories;
   List<menu_models.MenuItem> get menuItems => _menuItems;
   List<menu_models.AddOn> get addOns => _addOns;
-  List<menu_models.AddOn> get menuItemAddOns => _menuItemAddOns; // Getter for menu item specific add-ons
+  List<menu_models.AddOn> get menuItemAddOns =>
+      _menuItemAddOns; // Getter for menu item specific add-ons
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -32,7 +34,9 @@ class MenuProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      print('MenuProvider: Loading all menu data with usePublicEndpoint: $usePublicEndpoint');
+      print(
+        'MenuProvider: Loading all menu data with usePublicEndpoint: $usePublicEndpoint',
+      );
 
       final futures = await Future.wait([
         ApiService.getCategories(usePublicEndpoint: usePublicEndpoint),
@@ -44,7 +48,9 @@ class MenuProvider with ChangeNotifier {
       _menuItems = futures[1] as List<menu_models.MenuItem>;
       _addOns = futures[2] as List<menu_models.AddOn>;
 
-      print('MenuProvider: Loaded ${_categories.length} categories, ${_menuItems.length} menu items, ${_addOns.length} add-ons');
+      print(
+        'MenuProvider: Loaded ${_categories.length} categories, ${_menuItems.length} menu items, ${_addOns.length} add-ons',
+      );
 
       notifyListeners();
     } catch (e) {
@@ -60,7 +66,9 @@ class MenuProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      _categories = await ApiService.getCategories(usePublicEndpoint: usePublicEndpoint);
+      _categories = await ApiService.getCategories(
+        usePublicEndpoint: usePublicEndpoint,
+      );
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -74,7 +82,9 @@ class MenuProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      _menuItems = await ApiService.getMenuItems(usePublicEndpoint: usePublicEndpoint);
+      _menuItems = await ApiService.getMenuItems(
+        usePublicEndpoint: usePublicEndpoint,
+      );
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -83,16 +93,23 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadAddOns({bool usePublicEndpoint = false, bool resetError = true}) async {
+  Future<void> loadAddOns({
+    bool usePublicEndpoint = false,
+    bool resetError = true,
+  }) async {
     try {
       _setLoading(true);
       if (resetError) _setError(null);
 
-      print('MenuProvider: Loading add-ons with usePublicEndpoint: $usePublicEndpoint');
-      
-      _addOns = await ApiService.getAddOns(usePublicEndpoint: usePublicEndpoint);
+      print(
+        'MenuProvider: Loading add-ons with usePublicEndpoint: $usePublicEndpoint',
+      );
+
+      _addOns = await ApiService.getAddOns(
+        usePublicEndpoint: usePublicEndpoint,
+      );
       print('MenuProvider: Loaded ${_addOns.length} add-ons');
-      
+
       notifyListeners();
     } catch (e) {
       print('MenuProvider: Error loading add-ons: $e');
@@ -103,16 +120,24 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Add method to load add-ons specific to a menu item
-  Future<void> loadMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
+  Future<void> loadMenuItemAddOns(
+    int menuItemId, {
+    bool usePublicEndpoint = true,
+  }) async {
     try {
       _setLoading(true);
       _setError(null);
 
       print('MenuProvider: Loading add-ons for menu item #$menuItemId');
-      
-      _menuItemAddOns = await ApiService.getMenuItemAddOns(menuItemId, usePublicEndpoint: usePublicEndpoint);
-      print('MenuProvider: Loaded ${_menuItemAddOns.length} add-ons for menu item #$menuItemId');
-      
+
+      _menuItemAddOns = await ApiService.getMenuItemAddOns(
+        menuItemId,
+        usePublicEndpoint: usePublicEndpoint,
+      );
+      print(
+        'MenuProvider: Loaded ${_menuItemAddOns.length} add-ons for menu item #$menuItemId',
+      );
+
       notifyListeners();
     } catch (e) {
       print('MenuProvider: Error loading add-ons for menu item: $e');
@@ -123,13 +148,21 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Load menu items associated with a specific add-on
-  Future<List<menu_models.MenuItem>> loadAddOnMenuItems(int addOnId, {bool usePublicEndpoint = true}) async {
+  Future<List<menu_models.MenuItem>> loadAddOnMenuItems(
+    int addOnId, {
+    bool usePublicEndpoint = true,
+  }) async {
     try {
       print('MenuProvider: Loading menu items for add-on #$addOnId');
-      
-      final menuItems = await ApiService.getAddOnMenuItems(addOnId, usePublicEndpoint: usePublicEndpoint);
-      print('MenuProvider: Loaded ${menuItems.length} menu items for add-on #$addOnId');
-      
+
+      final menuItems = await ApiService.getAddOnMenuItems(
+        addOnId,
+        usePublicEndpoint: usePublicEndpoint,
+      );
+      print(
+        'MenuProvider: Loaded ${menuItems.length} menu items for add-on #$addOnId',
+      );
+
       return menuItems;
     } catch (e) {
       print('MenuProvider: Error loading menu items for add-on: $e');
@@ -138,16 +171,26 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Get menu items that are NOT associated with a specific add-on
-  Future<List<menu_models.MenuItem>> getAvailableMenuItemsForAddOn(int addOnId, {bool usePublicEndpoint = true}) async {
+  Future<List<menu_models.MenuItem>> getAvailableMenuItemsForAddOn(
+    int addOnId, {
+    bool usePublicEndpoint = true,
+  }) async {
     try {
       final allMenuItems = _menuItems;
-      final addOnMenuItems = await loadAddOnMenuItems(addOnId, usePublicEndpoint: usePublicEndpoint);
+      final addOnMenuItems = await loadAddOnMenuItems(
+        addOnId,
+        usePublicEndpoint: usePublicEndpoint,
+      );
       final addOnMenuItemIds = addOnMenuItems.map((item) => item.id).toSet();
-      
+
       // Filter out menu items that are already in the add-on
-      final availableItems = allMenuItems.where((item) => !addOnMenuItemIds.contains(item.id)).toList();
-      
-      print('MenuProvider: Found ${availableItems.length} available menu items for add-on #$addOnId');
+      final availableItems = allMenuItems
+          .where((item) => !addOnMenuItemIds.contains(item.id))
+          .toList();
+
+      print(
+        'MenuProvider: Found ${availableItems.length} available menu items for add-on #$addOnId',
+      );
       return availableItems;
     } catch (e) {
       print('MenuProvider: Error getting available menu items for add-on: $e');
@@ -162,10 +205,10 @@ class MenuProvider with ChangeNotifier {
       _setError(null);
 
       await ApiService.addMenuItemsToAddOn(addOnId, menuItemIds);
-      
+
       // Reload add-ons to reflect changes
       await loadAddOns();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to add menu items to add-on: $e');
@@ -176,16 +219,19 @@ class MenuProvider with ChangeNotifier {
   }
 
   // Remove menu items from an add-on
-  Future<bool> removeMenuItemsFromAddOn(int addOnId, List<int> menuItemIds) async {
+  Future<bool> removeMenuItemsFromAddOn(
+    int addOnId,
+    List<int> menuItemIds,
+  ) async {
     try {
       _setLoading(true);
       _setError(null);
 
       await ApiService.removeMenuItemsFromAddOn(addOnId, menuItemIds);
-      
+
       // Reload add-ons to reflect changes
       await loadAddOns();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to remove menu items from add-on: $e');
@@ -210,13 +256,14 @@ class MenuProvider with ChangeNotifier {
   // Extract categories from menu items if categories endpoint is not available
   List<menu_models.Category> getCategoriesFromMenuItems() {
     final Map<int, menu_models.Category> categoriesMap = {};
-    
+
     for (final menuItem in _menuItems) {
-      if (menuItem.category != null && !categoriesMap.containsKey(menuItem.category!.id)) {
+      if (menuItem.category != null &&
+          !categoriesMap.containsKey(menuItem.category!.id)) {
         categoriesMap[menuItem.category!.id] = menuItem.category!;
       }
     }
-    
+
     return categoriesMap.values.toList();
   }
 
@@ -320,7 +367,7 @@ class MenuProvider with ChangeNotifier {
         'price': price,
         'cogs': cogs,
         'is_available': isAvailable,
-        'menu_item_ids': menuItemIds, // Required: at least one menu item
+        'menu_item_ids': menuItemIds,
         if (description != null) 'description': description,
       };
 
@@ -347,15 +394,15 @@ class MenuProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final categoryData = {
-        'name': name,
-        'description': description,
-      };
+      final categoryData = {'name': name, 'description': description};
 
       await ApiService.updateCategory(id, categoryData);
       final index = _categories.indexWhere((c) => c.id == id);
       if (index != -1) {
-        _categories[index] = _categories[index].copyWith(name: name, description: description);
+        _categories[index] = _categories[index].copyWith(
+          name: name,
+          description: description,
+        );
         notifyListeners();
       }
     } catch (e) {
@@ -384,7 +431,15 @@ class MenuProvider with ChangeNotifier {
 
   // MenuItem CRUD methods - removed duplicate, keeping the first version
 
-  Future<void> updateMenuItem(int id, String name, int categoryId, String description, double price, double cogs, bool isAvailable) async {
+  Future<void> updateMenuItem(
+    int id,
+    String name,
+    int categoryId,
+    String description,
+    double price,
+    double cogs,
+    bool isAvailable,
+  ) async {
     try {
       _setLoading(true);
       _setError(null);
@@ -434,7 +489,14 @@ class MenuProvider with ChangeNotifier {
   }
 
   // AddOn CRUD methods
-  Future<void> updateAddOn(int id, String name, String description, double price, double cogs, bool isAvailable) async {
+  Future<void> updateAddOn(
+    int id,
+    String name,
+    String description,
+    double price,
+    double cogs,
+    bool isAvailable,
+  ) async {
     try {
       _setLoading(true);
       _setError(null);

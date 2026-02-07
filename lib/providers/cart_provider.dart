@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import '../models/member.dart';
+import '../models/promo.dart';
 import '../models/transaction.dart';
 import '../models/menu.dart';
 import '../services/api_service.dart';
@@ -7,8 +9,20 @@ class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
   bool _isLoading = false;
   String? _error;
-  double _discount = 0.0;
+  
   double _tax = 0.0;
+
+  // Manual Discount
+  double _manualDiscountPercentage = 0.0;
+  double _manualDiscount = 0.0;
+
+  // Member and Promo
+  Member? _member;
+  Promo? _promo;
+  double _memberDiscount = 0.0; // Added for member discount
+  double _promoDiscount = 0.0;
+  String? _validationError;
+
 
   List<CartItem> get items => _items;
   bool get isLoading => _isLoading;
@@ -18,9 +32,17 @@ class CartProvider with ChangeNotifier {
   int get totalQuantity => _items.fold(0, (sum, item) => sum + item.quantity);
   double get subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
   double get addOnsTotal => _items.fold(0, (sum, item) => sum + item.addOnsTotal);
-  double get discount => _discount;
+  double get discount => _manualDiscount;
+  double get manualDiscountPercentage => _manualDiscountPercentage;
   double get tax => _tax;
-  double get total => (subtotal + addOnsTotal + tax - discount).clamp(0.0, double.infinity);
+  
+  Member? get member => _member;
+  Promo? get promo => _promo;
+  double get memberDiscount => _memberDiscount;
+  double get promoDiscount => _promoDiscount;
+  String? get validationError => _validationError;
+  
+  double get total => (subtotal + addOnsTotal + tax - _manualDiscount - _memberDiscount - _promoDiscount).clamp(0.0, double.infinity);
 
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -29,6 +51,11 @@ class CartProvider with ChangeNotifier {
 
   void _setError(String? error) {
     _error = error;
+    notifyListeners();
+  }
+  
+  void _setValidationError(String? error) {
+    _validationError = error;
     notifyListeners();
   }
 
@@ -48,12 +75,14 @@ class CartProvider with ChangeNotifier {
         addOns: addOns ?? [],
       ));
     }
+    _recalculateDiscounts();
     notifyListeners();
   }
 
   void removeItem(int index) {
     if (index >= 0 && index < _items.length) {
       _items.removeAt(index);
+      _recalculateDiscounts();
       notifyListeners();
     }
   }
@@ -64,6 +93,7 @@ class CartProvider with ChangeNotifier {
         removeItem(index);
       } else {
         _items[index].quantity = quantity;
+        _recalculateDiscounts();
         notifyListeners();
       }
     }
@@ -85,6 +115,7 @@ class CartProvider with ChangeNotifier {
         // Add new add-on
         _items[itemIndex].addOns.add(CartAddOn(addOn: addOn));
       }
+      _recalculateDiscounts();
       notifyListeners();
     }
   }
@@ -93,24 +124,133 @@ class CartProvider with ChangeNotifier {
     if (itemIndex >= 0 && itemIndex < _items.length &&
         addOnIndex >= 0 && addOnIndex < _items[itemIndex].addOns.length) {
       _items[itemIndex].addOns.removeAt(addOnIndex);
+      _recalculateDiscounts();
       notifyListeners();
     }
   }
 
   void clear() {
     _items.clear();
-    _discount = 0.0;
+    _manualDiscount = 0.0;
+    _manualDiscountPercentage = 0.0;
     _tax = 0.0;
+    _member = null;
+    _promo = null;
+    _memberDiscount = 0.0;
+    _promoDiscount = 0.0;
+    _validationError = null;
     notifyListeners();
   }
 
-  void setDiscount(double discount) {
-    _discount = discount.clamp(0.0, double.infinity);
+  void setDiscount(double percentage) {
+    _manualDiscountPercentage = percentage.clamp(0.0, 100.0);
+    _recalculateDiscounts();
     notifyListeners();
   }
 
   void setTax(double tax) {
     _tax = tax.clamp(0.0, double.infinity);
+    notifyListeners();
+  }
+
+  void _recalculateDiscounts() {
+    final currentSubtotal = subtotal + addOnsTotal;
+
+    // Recalculate Manual Discount
+    _manualDiscount = currentSubtotal * (_manualDiscountPercentage / 100);
+
+    // Recalculate Member Discount
+    if (_member != null) {
+      _memberDiscount = currentSubtotal * (_member!.discount / 100);
+    } else {
+      _memberDiscount = 0.0;
+    }
+    
+    // Recalculate Promo Discount
+    if (_promo != null) {
+      // If a member is applied and the promo is not stackable, don't apply promo discount
+      if (_member != null && !_promo!.stackable) {
+        _promoDiscount = 0.0;
+      } else {
+        if (_promo!.type.toLowerCase() == 'percentage') {
+          // Apply percentage discount on the subtotal
+          _promoDiscount = currentSubtotal * (_promo!.value / 100);
+        } else { // 'fixed'
+          _promoDiscount = _promo!.value;
+        }
+      }
+    } else {
+      _promoDiscount = 0.0;
+    }
+  }
+
+  Future<bool> applyMember(String code) async {
+    _setLoading(true);
+    _setValidationError(null);
+    try {
+      final member = await ApiService.validateMember(code);
+      _member = member;
+      _recalculateDiscounts();
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _setValidationError(e.message);
+      removeMember();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void removeMember() {
+    _member = null;
+    _memberDiscount = 0.0;
+    _recalculateDiscounts();
+    _setValidationError(null);
+    notifyListeners();
+  }
+
+  Future<bool> applyPromo(String code) async {
+    _setLoading(true);
+    _setValidationError(null);
+    try {
+      final promo = await ApiService.validatePromo(code);
+
+      // Basic validation
+      if (!promo.isActive) {
+        throw ApiException('Promo code is not active.');
+      }
+      if (promo.startAt != null && DateTime.now().isBefore(promo.startAt!)) {
+        throw ApiException('Promo has not started yet.');
+      }
+      if (promo.endAt != null && DateTime.now().isAfter(promo.endAt!)) {
+        throw ApiException('Promo has expired.');
+      }
+
+      // Check for stackability if member is already applied
+      if (_member != null && !promo.stackable) {
+        _setValidationError('Promo cannot be combined with a member discount.');
+        // We still set the promo but the discount will be 0
+      }
+      
+      _promo = promo;
+      _recalculateDiscounts();
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _setValidationError(e.message);
+      removePromo();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void removePromo() {
+    _promo = null;
+    _promoDiscount = 0.0;
+    _recalculateDiscounts();
+    _setValidationError(null);
     notifyListeners();
   }
 
@@ -134,20 +274,17 @@ class CartProvider with ChangeNotifier {
       _setError(null);
 
       final transactionData = {
-        'status': 'pending',
-        'sub_total': subtotal + addOnsTotal,
-        'tax': tax,
-        'discount': discount,
-        'total': total,
         'customer_name': customerName,
+        'member_id': _member?.id,
+        'promo_id': _promo?.id,
+        'tax': tax,
+        'discount': _manualDiscountPercentage, // Send fixed manual discount amount
         'items': _items.map((item) => {
           'menu_item_id': item.menuItem.id,
           'quantity': item.quantity,
-          'price': item.menuItem.price,
           'add_ons': item.addOns.map((addOn) => {
             'add_on_id': addOn.addOn.id,
-            'quantity': addOn.quantity, // Multiply add-on quantity by menu item quantity
-            'price': addOn.addOn.price,
+            'quantity': addOn.quantity,
           }).toList(),
         }).toList(),
       };

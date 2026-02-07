@@ -73,9 +73,80 @@ The POS system provides public endpoints for Point of Sale operations that don't
 GET /api/v1/public/menu/categories
 ```
 
+**Response:**
+```json
+[
+    {
+        "id": 1,
+        "name": "Coffee",
+        "description": "Hot and cold coffee beverages",
+        "created_at": "2025-07-09T15:07:53.253915+07:00",
+        "updated_at": "2025-07-09T15:07:53.253915+07:00",
+        "menu_items": [
+            {
+                "id": 4,
+                "category_id": 1,
+                "name": "Latte",
+                "price": 28000,
+                "cogs": 14000,
+                "is_available": true
+            }
+        ]
+    }
+]
+```
+
 ### Get Menu Items (Public)
 ```http
 GET /api/v1/public/menu/items?category_id=1
+```
+
+**Response:**
+```json
+{
+    "data": [
+        {
+            "id": 4,
+            "category_id": 1,
+            "name": "Latte",
+            "description": "Espresso with steamed milk",
+            "price": 28000,
+            "cogs": 14000,
+            "margin": 50.0,
+            "is_available": true,
+            "image_url": "",
+            "created_at": "2025-07-09T15:07:53.253915+07:00",
+            "updated_at": "2025-07-09T15:07:53.253915+07:00",
+            "category": {
+                "id": 1,
+                "name": "Coffee",
+                "description": "Hot and cold coffee beverages"
+            },
+            "add_ons": [
+                {
+                    "id": 17,
+                    "menu_item_id": 4,
+                    "name": "Double Shot for Latte",
+                    "description": "Double espresso shot specifically for lattes",
+                    "price": 8000,
+                    "cogs": 3000,
+                    "margin": 62.5,
+                    "is_available": true
+                },
+                {
+                    "id": 2,
+                    "menu_item_id": null,
+                    "name": "Whipped Cream",
+                    "description": "Fresh whipped cream",
+                    "price": 3000,
+                    "cogs": 1500,
+                    "margin": 50.0,
+                    "is_available": true
+                }
+            ]
+        }
+    ]
+}
 ```
 
 ### Get Menu Item (Public)
@@ -83,9 +154,99 @@ GET /api/v1/public/menu/items?category_id=1
 GET /api/v1/public/menu/items/{id}
 ```
 
+**Response:**
+```json
+{
+    "id": 4,
+    "category_id": 1,
+    "name": "Latte",
+    "description": "Espresso with steamed milk",
+    "price": 28000,
+    "cogs": 14000,
+    "margin": 50.0,
+    "is_available": true,
+    "image_url": "",
+    "created_at": "2025-07-09T15:07:53.253915+07:00",
+    "updated_at": "2025-07-09T15:07:53.253915+07:00",
+    "category": {
+        "id": 1,
+        "name": "Coffee",
+        "description": "Hot and cold coffee beverages"
+    }
+}
+```
+
 ### Get Add-ons (Public)
 ```http
 GET /api/v1/public/add-ons?available=true
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "menu_item_id": null,
+            "name": "Extra Shot",
+            "description": "Additional espresso shot",
+            "price": 8000,
+            "cogs": 4000,
+            "margin": 50.0,
+            "is_available": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        },
+        {
+            "id": 17,
+            "menu_item_id": 4,
+            "name": "Double Shot for Latte",
+            "description": "Double espresso shot specifically for lattes",
+            "price": 8000,
+            "cogs": 3000,
+            "margin": 62.5,
+            "is_available": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "menu_item": {
+                "id": 4,
+                "name": "Latte",
+                "price": 28000
+            }
+        }
+    ]
+}
+```
+
+### Get Add-on (Public)
+```http
+GET /api/v1/public/add-ons/{id}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Extra Shot",
+    "description": "Additional espresso shot",
+    "price": 8000,
+    "cogs": 4000,
+    "margin": 50.0,
+    "is_available": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z",
+    "menu_items": [
+        {
+            "id": 4,
+            "category_id": 1,
+            "name": "Latte",
+            "price": 28000,
+            "cogs": 14000,
+            "is_available": true
+        }
+    ]
+}
 ```
 
 ### Get Add-ons for Menu Item (Public)
@@ -98,12 +259,76 @@ GET /api/v1/public/menu-item-add-ons/{menu_item_id}
 GET /api/v1/public/payment-methods
 ```
 
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Cash",
+            "code": "cash",
+            "is_active": true
+        },
+        {
+            "id": 2,
+            "name": "Credit Card",
+            "code": "card",
+            "is_active": true
+        },
+        {
+            "id": 3,
+            "name": "Digital Wallet",
+            "code": "digital_wallet",
+            "is_active": true
+        }
+    ]
+}
+```
+
 ## User Management
 
 ### Get Profile
 ```http
 GET /api/v1/profile
 Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "username": "admin",
+    "email": "admin@pos.com",
+    "full_name": "",
+    "role": "admin",
+    "is_active": true,
+    "created_at": "2025-07-07T00:34:37.207182+07:00",
+    "updated_at": "2025-07-07T00:34:37.207182+07:00"
+}
+```
+
+### Update Profile
+```http
+PUT /api/v1/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "full_name": "New Full Name",
+    "email": "new.email@example.com"
+}
+```
+**Response:**
+```json
+{
+    "id": 1,
+    "username": "admin",
+    "email": "new.email@example.com",
+    "full_name": "New Full Name",
+    "role": "admin",
+    "is_active": true
+}
 ```
 
 ### Register User (Admin only)
@@ -119,6 +344,145 @@ Content-Type: application/json
     "role": "cashier"
 }
 ```
+
+**Response:**
+```json
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+        "id": 2,
+        "username": "newuser",
+        "email": "newuser@pos.com",
+        "full_name": "New User",
+        "role": "cashier",
+        "is_active": true,
+        "created_at": "2025-07-10T10:00:00.000000+07:00",
+        "updated_at": "2025-07-10T10:00:00.000000+07:00"
+    }
+}
+```
+
+### Get Users
+```http
+GET /api/v1/users
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+[
+    {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@pos.com",
+        "full_name": "",
+        "role": "admin",
+        "is_active": true,
+        "created_at": "2025-07-07T00:34:37.207182+07:00",
+        "updated_at": "2025-07-07T00:34:37.207182+07:00"
+    },
+    {
+        "id": 2,
+        "username": "newuser",
+        "email": "newuser@pos.com",
+        "full_name": "New User",
+        "role": "cashier",
+        "is_active": true,
+        "created_at": "2025-07-10T10:00:00.000000+07:00",
+        "updated_at": "2025-07-10T10:00:00.000000+07:00"
+    }
+]
+```
+
+### Get User
+```http
+GET /api/v1/users/{id}
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+    "id": 2,
+    "username": "newuser",
+    "email": "newuser@pos.com",
+    "full_name": "New User",
+    "role": "cashier",
+    "is_active": true,
+    "created_at": "2025-07-10T10:00:00.000000+07:00",
+    "updated_at": "2025-07-10T10:00:00.000000+07:00"
+}
+```
+
+### Update User
+```http
+PUT /api/v1/users/{id}
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+    "full_name": "Updated Name",
+    "email": "updated.email@example.com",
+    "is_active": true
+}
+```
+
+**Response:**
+```json
+{
+    "id": 2,
+    "username": "updateduser",
+    "email": "updated@pos.com",
+    "full_name": "Updated Name",
+    "role": "manager",
+    "is_active": true,
+    "created_at": "2025-07-10T10:00:00.000000+07:00",
+    "updated_at": "2025-07-10T11:00:00.000000+07:00"
+}
+```
+
+### Update User Role
+```http
+PUT /api/v1/users/{id}/role
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+    "role": "manager"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 2,
+    "username": "updateduser",
+    "email": "updated@pos.com",
+    "full_name": "Updated Name",
+    "role": "admin",
+    "is_active": true,
+    "created_at": "2025-07-10T10:00:00.000000+07:00",
+    "updated_at": "2025-07-10T12:00:00.000000+07:00"
+}
+```
+
+### Delete User
+```http
+DELETE /api/v1/users/{id}
+Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+    "message": "User deleted successfully"
+}
+```
+
+**Available Roles:**
+- `admin`: Full system access
+- `manager`: Can manage menu, transactions, expenses, view analytics
+- `cashier`: Can create transactions, view menu
 
 ## Menu Management
 
@@ -162,6 +526,17 @@ Content-Type: application/json
 {
     "name": "New Category",
     "description": "Category description"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 2,
+    "name": "New Category",
+    "description": "Category description",
+    "created_at": "2025-07-10T13:00:00.000000+07:00",
+    "updated_at": "2025-07-10T13:00:00.000000+07:00"
 }
 ```
 
@@ -242,6 +617,116 @@ Content-Type: application/json
 }
 ```
 
+### Update Category (Admin/Manager)
+```http
+PUT /api/v1/menu/categories/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "name": "Updated Category Name",
+    "description": "Updated category description"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Updated Category Name",
+    "description": "Updated category description",
+    "created_at": "2025-07-09T15:07:53.253915+07:00",
+    "updated_at": "2025-07-10T10:00:00.000000+07:00"
+}
+```
+
+### Delete Category (Admin/Manager)
+```http
+DELETE /api/v1/menu/categories/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Category deleted successfully"
+}
+```
+
+### Get Menu Item
+```http
+GET /api/v1/menu/items/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "id": 4,
+    "category_id": 1,
+    "name": "Latte",
+    "description": "Espresso with steamed milk",
+    "price": 28000,
+    "cogs": 14000,
+    "margin": 50.0,
+    "is_available": true,
+    "image_url": "",
+    "created_at": "2025-07-09T15:07:53.253915+07:00",
+    "updated_at": "2025-07-09T15:07:53.253915+07:00",
+    "category": {
+        "id": 1,
+        "name": "Coffee",
+        "description": "Hot and cold coffee beverages"
+    }
+}
+```
+
+### Update Menu Item (Admin/Manager)
+```http
+PUT /api/v1/menu/items/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "category_id": 1,
+    "name": "Updated Latte",
+    "description": "Updated description",
+    "price": 30000,
+    "cogs": 15000,
+    "is_available": false
+}
+```
+
+**Response:**
+```json
+{
+    "id": 4,
+    "category_id": 1,
+    "name": "Updated Latte",
+    "description": "Updated description",
+    "price": 30000,
+    "cogs": 15000,
+    "margin": 50.0,
+    "is_available": false,
+    "image_url": "",
+    "created_at": "2025-07-09T15:07:53.253915+07:00",
+    "updated_at": "2025-07-10T11:00:00.000000+07:00"
+}
+```
+
+### Delete Menu Item (Admin/Manager)
+```http
+DELETE /api/v1/menu/items/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Menu item deleted successfully"
+}
+```
+
 ## Add-ons Management
 
 The system supports both **global add-ons** (available for all menu items) and **menu-specific add-ons** (only available for specific menu items).
@@ -288,6 +773,37 @@ GET /api/v1/add-ons?available=true&menu_item_id=4
                 "name": "Latte",
                 "price": 28000
             }
+        }
+    ]
+}
+```
+
+### Get Add-on
+```http
+GET /api/v1/add-ons/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Extra Shot",
+    "description": "Additional espresso shot",
+    "price": 8000,
+    "cogs": 4000,
+    "margin": 50.0,
+    "is_available": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z",
+    "menu_items": [
+        {
+            "id": 4,
+            "category_id": 1,
+            "name": "Latte",
+            "price": 28000,
+            "cogs": 14000,
+            "is_available": true
         }
     ]
 }
@@ -362,6 +878,32 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+    "message": "Add-on created and assigned to 1 menu items successfully",
+    "data": {
+        "id": 18,
+        "name": "Oat Milk",
+        "description": "Premium oat milk substitute",
+        "price": 7000,
+        "cogs": 4000,
+        "margin": 42.857142857142854,
+        "is_available": true,
+        "created_at": "2025-07-10T14:00:00.000000+07:00",
+        "updated_at": "2025-07-10T14:00:00.000000+07:00",
+        "menu_items": [
+            {
+                "id": 4,
+                "category_id": 1,
+                "name": "Latte",
+                "price": 28000
+            }
+        ]
+    }
+}
+```
+
 ### Update Add-on (Admin/Manager)
 ```http
 PUT /api/v1/add-ons/{id}
@@ -378,10 +920,504 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Updated Add-on Name",
+    "description": "Updated description",
+    "price": 6000,
+    "cogs": 3000,
+    "margin": 50.0,
+    "is_available": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
 ### Delete Add-on (Admin/Manager)
 ```http
 DELETE /api/v1/add-ons/{id}
 Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Add-on deleted successfully"
+}
+```
+
+### Add Menu Items to Add-on
+Associates a list of menu items with a specific add-on.
+
+```http
+POST /api/v1/add-ons/{id}/menu-items
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "menu_item_ids": [1, 2, 3]
+}
+```
+
+**Response:**
+```json
+{
+    "message": "Added 2 menu items to add-on successfully",
+    "data": {
+        "id": 1,
+        "name": "Extra Shot",
+        "description": "Additional espresso shot",
+        "price": 8000,
+        "cogs": 4000,
+        "margin": 50.0,
+        "is_available": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "menu_items": [
+            {
+                "id": 1,
+                "category_id": 1,
+                "name": "Espresso",
+                "price": 15000
+            },
+            {
+                "id": 4,
+                "category_id": 1,
+                "name": "Latte",
+                "price": 28000
+            }
+        ]
+    }
+}
+```
+
+### Remove Menu Items from Add-on
+Disassociates a list of menu items from a specific add-on.
+
+```http
+DELETE /api/v1/add-ons/{id}/menu-items
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "menu_item_ids": [1, 2]
+}
+```
+
+**Response:**
+```json
+{
+    "message": "Removed 2 menu items from add-on successfully",
+    "data": {
+        "id": 1,
+        "name": "Extra Shot",
+        "description": "Additional espresso shot",
+        "price": 8000,
+        "cogs": 4000,
+        "margin": 50.0,
+        "is_available": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "menu_items": [
+            {
+                "id": 4,
+                "category_id": 1,
+                "name": "Latte",
+                "price": 28000
+            }
+        ]
+    }
+}
+```
+
+## Members & Promotions
+
+The POS system supports membership cards and promotions that can be applied at checkout.
+
+Key concepts:
+- Member card: each member has a unique 8-digit numeric `member_code` (example: `12345678`) used at POS to apply member discounts.
+- Promo: promotional offers that can be percentage-based or fixed-amount discounts. Promos can have start/end dates, usage limits, and a `stackable` flag to control combining with other promos or member discounts.
+
+Security & validation:
+- `member_code` must be exactly 8 digits (0-9) and unique across members.
+- Promo types: `percentage` (0-100) or `fixed` (amount in smallest currency unit).
+- Promos respect `start_at` and `end_at` and optional `usage_limit` per customer or global.
+
+DB notes:
+- Add migrations to create `members` and `promotions` tables. Example filenames:
+    - `008_create_members_table.sql`
+    - `009_create_promotions_table.sql`
+
+### Member Endpoints
+
+Create member (Admin/Manager):
+```http
+POST /api/v1/members
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "full_name": "Alice Johnson",
+    "email": "alice@example.com"
+}
+```
+
+Response (201):
+```json
+{
+    "id": 1,
+    "full_name": "Alice Johnson",
+    "email": "alice@example.com",
+    "member_code": "82471023",
+    "is_active": true,
+    "created_at": "2026-01-24T10:00:00Z"
+}
+```
+
+### Validate Member
+```http
+GET /api/v1/members/validate?card_number={cardNumber}
+Authorization: Bearer <token>
+```
+
+**Response (Success):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "full_name": "Alice Johnson",
+        "phone_number": "1234567890",
+        "card_number": "82471023",
+        "points": 0,
+        "discount": 10,
+        "expired_date": "2027-01-24T10:00:00Z",
+        "created_at": "2026-01-24T10:00:00Z",
+        "updated_at": "2026-01-24T10:00:00Z"
+    }
+}
+```
+
+**Response (Not Found):**
+```json
+{
+    "error": "Member not found"
+}
+```
+
+**Response (Expired):**
+```json
+{
+    "error": "Member card has expired"
+}
+```
+
+### Get Members
+```http
+GET /api/v1/members
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "full_name": "Alice Johnson",
+            "phone_number": "1234567890",
+            "card_number": "82471023",
+            "points": 0,
+            "discount": 10,
+            "expired_date": "2027-01-24T10:00:00Z",
+            "created_at": "2026-01-24T10:00:00Z",
+            "updated_at": "2026-01-24T10:00:00Z"
+        }
+    ]
+}
+```
+
+### Get Member by Card
+```http
+GET /api/v1/members/card/{cardNumber}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "full_name": "Alice Johnson",
+        "phone_number": "1234567890",
+        "card_number": "82471023",
+        "points": 0,
+        "discount": 10,
+        "expired_date": "2027-01-24T10:00:00Z",
+        "created_at": "2026-01-24T10:00:00Z",
+        "updated_at": "2026-01-24T10:00:00Z"
+    }
+}
+```
+
+### Update Member (Admin/Manager)
+```http
+PUT /api/v1/members/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "full_name": "Alice Johnson Smith",
+    "email": "alice.smith@example.com",
+    "is_active": false
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "full_name": "Alice Johnson Smith",
+    "phone_number": "1234567890",
+    "card_number": "82471023",
+    "points": 100,
+    "discount": 15,
+    "expired_date": "2028-01-24T10:00:00Z",
+    "created_at": "2026-01-24T10:00:00Z",
+    "updated_at": "2026-01-25T10:00:00Z"
+}
+```
+
+### Delete Member (Admin/Manager)
+```http
+DELETE /api/v1/members/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Member deleted successfully"
+}
+```
+
+### Promotions Endpoints
+
+### Get Promos
+```http
+GET /api/v1/promos
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "code": "SUMMER25",
+            "name": "Summer Sale",
+            "description": "25% off on all items",
+            "discount_type": "percentage",
+            "discount_value": 25,
+            "min_order_amount": 0,
+            "max_discount": 0,
+            "start_date": "2026-06-01T00:00:00Z",
+            "end_date": "2026-06-30T23:59:59Z",
+            "is_active": true,
+            "created_at": "2026-05-01T00:00:00Z",
+            "updated_at": "2026-05-01T00:00:00Z"
+        }
+    ]
+}
+```
+
+Create promo (Admin/Manager):
+```http
+POST /api/v1/promos
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "code": "SUMMER25",
+    "type": "percentage",        // "percentage" or "fixed"
+    "value": 25,                 // percent (0-100) or fixed amount in cents
+    "start_at": "2026-06-01T00:00:00Z",
+    "end_at": "2026-06-30T23:59:59Z",
+    "usage_limit": 100,          // optional
+    "stackable": false,
+    "is_active": true
+}
+```
+
+**Response:**
+```json
+{
+    "id": 2,
+    "code": "WINTER15",
+    "name": "Winter Sale",
+    "description": "15% off on all items",
+    "discount_type": "percentage",
+    "discount_value": 15,
+    "min_order_amount": 0,
+    "max_discount": 0,
+    "start_date": "2026-12-01T00:00:00Z",
+    "end_date": "2026-12-31T23:59:59Z",
+    "is_active": true,
+    "created_at": "2026-11-01T00:00:00Z",
+    "updated_at": "2026-11-01T00:00:00Z"
+}
+```
+
+### Validate Promo Code
+```http
+GET /api/v1/promos/validate?code=PROMO_CODE
+Authorization: Bearer <token>
+```
+
+Response (200):
+```json
+{
+    "success": true,
+    "data": {
+        "id": 2,
+        "code": "WINTER15",
+        "name": "Winter Sale",
+        "description": "15% off on all items",
+        "discount_type": "percentage",
+        "discount_value": 15,
+        "min_order_amount": 0,
+        "max_discount": 0,
+        "start_date": "2026-12-01T00:00:00Z",
+        "end_date": "2026-12-31T23:59:59Z",
+        "is_active": true,
+        "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z"
+    }
+}
+```
+
+### Update Promo (Admin/Manager)
+```http
+PUT /api/v1/promos/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "code": "WINTER15",
+    "type": "percentage",
+    "value": 15,
+    "is_active": false
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "code": "SUMMER30",
+    "name": "Summer Sale",
+    "description": "30% off on all items",
+    "discount_type": "percentage",
+    "discount_value": 30,
+    "min_order_amount": 0,
+    "max_discount": 0,
+    "start_date": "2026-06-01T00:00:00Z",
+    "end_date": "2026-06-30T23:59:59Z",
+    "is_active": true,
+    "created_at": "2026-05-01T00:00:00Z",
+    "updated_at": "2026-05-15T00:00:00Z"
+}
+```
+
+### Delete Promo (Admin/Manager)
+```http
+DELETE /api/v1/promos/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Promo deleted successfully"
+}
+```
+
+### Applying Member / Promo on Transaction
+
+When creating a transaction, the POS can include either a `member_code` and/or `promo_code` in the request body. The server will validate and apply discounts in this order:
+1. Validate `member_code` (if present) and apply member discount.
+2. Validate `promo_code` (if present) and apply promo if active and within date/usage limits.
+3. If a promo is not `stackable` and a member discount was applied, the promo will be rejected unless the promo `stackable` flag allows combining.
+
+Create transaction with member and promo example:
+```http
+POST /api/v1/transactions
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "customer_name": "Alice Johnson",
+    "member_id": 1,
+    "promo_id": 2,
+    "items": [
+        { "menu_item_id": 1, "quantity": 2 }
+    ],
+    "tax": 2500,
+    "discount": 0
+}
+```
+
+Successful response (discounts applied):
+```json
+{
+    "success": true,
+    "data": {
+        "id": 10,
+        "sub_total": 50000,
+        "member_discount": 5000,
+        "promo_discount": 11250,
+        "tax": 2500,
+        "total": 41250
+    }
+}
+```
+
+Error response when promo not stackable:
+```json
+{
+    "success": false,
+    "message": "Promo SUMMER25 cannot be combined with member discount"
+}
+```
+
+### CURL Examples
+
+Create member (admin):
+```bash
+curl -X POST "http://localhost:8080/api/v1/members" \
+    -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"full_name":"Alice Johnson","email":"alice@example.com"}'
+```
+
+Create promo (admin):
+```bash
+curl -X POST "http://localhost:8080/api/v1/promos" \
+    -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"code":"SUMMER25","type":"percentage","value":25,"start_at":"2026-06-01T00:00:00Z","end_at":"2026-06-30T23:59:59Z","stackable":false}'
+```
+
+Apply member/promo when creating a transaction (POS):
+```bash
+curl -X POST "http://localhost:8080/api/v1/transactions" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"customer_name":"Alice","member_code":"82471023","promo_code":"SUMMER25","items":[{"menu_item_id":1,"quantity":2}],"payment_method":"cash","tax":2500}'
 ```
 
 ## Transactions
@@ -414,7 +1450,6 @@ Content-Type: application/json
             ]
         }
     ],
-    "payment_method": "cash",
     "tax": 2500,
     "discount": 0
 }
@@ -475,6 +1510,64 @@ Content-Type: application/json
 }
 ```
 
+### Get Transactions
+```http
+GET /api/v1/transactions?status=paid&limit=10&offset=0
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "transaction_no": "TXN-20240101-0001",
+            "customer_name": "John Doe",
+            "status": "paid",
+            "payment_method": "cash",
+            "sub_total": 46000,
+            "tax": 2500,
+            "discount": 0,
+            "total": 48500,
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:30:00Z",
+            "items": [
+                {
+                    "id": 1,
+                    "menu_item_id": 1,
+                    "quantity": 2,
+                    "unit_price": 15000,
+                    "total_price": 30000,
+                    "menu_item": {
+                        "id": 1,
+                        "name": "Espresso",
+                        "price": 15000
+                    },
+                    "add_ons": [
+                        {
+                            "id": 1,
+                            "add_on_id": 1,
+                            "quantity": 1,
+                            "unit_price": 8000,
+                            "total_price": 8000,
+                            "add_on": {
+                                "id": 1,
+                                "name": "Extra Shot",
+                                "price": 8000
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 10
+}
+```
+
 ### Process Payment
 ```http
 PUT /api/v1/transactions/1/pay
@@ -486,9 +1579,57 @@ Content-Type: application/json
 }
 ```
 
-### Get Transactions
+**Response:**
+```json
+{
+    "id": 1,
+    "transaction_no": "TXN-20240101-0001",
+    "customer_name": "John Doe",
+    "status": "paid",
+    "payment_method": "cash",
+    "sub_total": 46000,
+    "tax": 2500,
+    "discount": 0,
+    "total": 48500,
+    "paid_at": "2024-01-01T12:30:00Z",
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": "2024-01-01T12:30:00Z",
+    "items": [
+        {
+            "id": 1,
+            "menu_item_id": 1,
+            "quantity": 2,
+            "unit_price": 15000,
+            "total_price": 30000,
+            "menu_item": {
+                "id": 1,
+                "name": "Espresso",
+                "price": 15000
+            },
+            "add_ons": [
+                {
+                    "id": 1,
+                    "add_on_id": 1,
+                    "quantity": 1,
+                    "unit_price": 8000,
+                    "total_price": 8000,
+                    "add_on": {
+                        "id": 1,
+                        "name": "Extra Shot",
+                        "price": 8000
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+### Get Transaction
+Retrieves a single transaction by its ID.
+
 ```http
-GET /api/v1/transactions?status=paid&limit=10&offset=0
+GET /api/v1/transactions/{id}
 Authorization: Bearer <token>
 ```
 
@@ -759,6 +1900,133 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+    "id": 1,
+    "type": "operational",
+    "category": "Utilities",
+    "description": "Monthly electricity bill",
+    "amount": 800000,
+    "date": "2024-01-01T00:00:00Z",
+    "user_id": 1,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z",
+    "user": {
+        "id": 1,
+        "username": "admin",
+        "role": "admin"
+    }
+}
+```
+
+### Get Expense
+```http
+GET /api/v1/expenses/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "type": "raw_material",
+    "category": "Coffee Beans",
+    "description": "Premium Arabica coffee beans - 5kg",
+    "amount": 500000,
+    "date": "2024-01-01T00:00:00Z",
+    "user_id": 1,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z",
+    "user": {
+        "id": 1,
+        "username": "admin",
+        "role": "admin"
+    }
+}
+```
+
+### Update Expense (Admin/Manager)
+```http
+PUT /api/v1/expenses/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "type": "operational",
+    "category": "Rent",
+    "description": "Monthly office rent",
+    "amount": 1000000,
+    "date": "2024-02-01T00:00:00Z"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "type": "operational",
+    "category": "Rent",
+    "description": "Monthly office rent",
+    "amount": 1000000,
+    "date": "2024-02-01T00:00:00Z",
+    "user_id": 1,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-02-01T00:00:00Z",
+    "user": {
+        "id": 1,
+        "username": "admin",
+        "role": "admin"
+    }
+}
+```
+
+### Delete Expense (Admin/Manager)
+```http
+DELETE /api/v1/expenses/{id}
+Authorization: Bearer <admin_or_manager_token>
+```
+
+**Response:**
+```json
+{
+    "message": "Expense deleted successfully"
+}
+```
+
+### Get Expense Summary
+```http
+GET /api/v1/expenses/summary
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "total_expenses": 1300000,
+    "expenses_by_type": [
+        {
+            "type": "raw_material",
+            "amount": 500000
+        },
+        {
+            "type": "operational",
+            "amount": 800000
+        }
+    ],
+    "expenses_by_category": [
+        {
+            "category": "Coffee Beans",
+            "amount": 500000
+        },
+        {
+            "category": "Utilities",
+            "amount": 800000
+        }
+    ]
+}
+```
+
 ## Dashboard Analytics
 
 **Access Requirements:** Admin or Manager role required for all dashboard endpoints.
@@ -824,10 +2092,45 @@ GET /api/v1/dashboard/sales-report?start_date=2025-01-01&end_date=2025-01-31
 Authorization: Bearer <admin_token>
 ```
 
+**Response:**
+```json
+{
+    "total_sales": 111000,
+    "total_orders": 2,
+    "average_order": 55500,
+    "top_categories": [
+        {
+            "category_name": "Food",
+            "total_sales": 70000,
+            "total_orders": 1
+        },
+        {
+            "category_name": "Drinks",
+            "total_sales": 41000,
+            "total_orders": 1
+        }
+    ]
+}
+```
+
 ### Get Profit Analysis
 ```http
 GET /api/v1/dashboard/profit-analysis?start_date=2025-01-01&end_date=2025-01-31
 Authorization: Bearer <admin_token>
+```
+
+**Response:**
+```json
+{
+    "gross_profit": 57700,
+    "net_profit": 33700,
+    "profit_margin": 30.36,
+    "cogs": 53300,
+    "revenue": 111000,
+    "expenses": 24000,
+    "addon_revenue": 10000,
+    "addon_cogs": 4000
+}
 ```
 
 ## Payment Methods
@@ -862,6 +2165,285 @@ GET /api/v1/payment-methods
         }
     ]
 }
+```
+
+## Stock Management
+
+### Get Raw Materials
+```http
+GET /api/v1/stock/raw-materials
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+[
+    {
+        "id": 1,
+        "name": "Coffee Beans",
+        "unit_of_measure": "kg",
+        "current_stock": 10,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+### Create Raw Material
+```http
+POST /api/v1/stock/raw-materials
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "name": "Coffee Beans",
+    "unit": "kg",
+    "stock": 10
+}
+```
+
+### Update Raw Material
+```http
+PUT /api/v1/stock/raw-materials/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "name": "Updated Coffee Beans",
+    "unit_of_measure": "gram",
+    "current_stock": 1500
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "name": "Updated Coffee Beans",
+    "unit_of_measure": "gram",
+    "current_stock": 1500,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Delete Raw Material
+```http
+DELETE /api/v1/stock/raw-materials/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Raw material deleted successfully"
+}
+```
+
+### Create Stock Receipt
+```http
+POST /api/v1/stock/receipts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "raw_material_id": 1,
+    "quantity": 5,
+    "notes": "Received new stock of coffee beans"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "raw_material_id": 1,
+    "quantity": 5,
+    "receipt_date": "2024-01-02T00:00:00Z",
+    "notes": "Received new stock of coffee beans",
+    "created_at": "2024-01-02T00:00:00Z",
+    "updated_at": "2024-01-02T00:00:00Z"
+}
+```
+
+### Create Stock Adjustment
+```http
+POST /api/v1/stock/adjustments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "raw_material_id": 1,
+    "quantity": -1,
+    "notes": "Wasted 1kg of coffee beans"
+}
+```
+
+**Response:**
+```json
+{
+    "id": 1,
+    "raw_material_id": 1,
+    "quantity": -1,
+    "adjustment_date": "2024-01-03T00:00:00Z",
+    "reason": "Wastage",
+    "notes": "Wasted 1kg of coffee beans",
+    "created_at": "2024-01-03T00:00:00Z",
+    "updated_at": "2024-01-03T00:00:00Z"
+}
+```
+
+### Create Daily Summary
+```http
+POST /api/v1/stock/summary
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+```json
+[
+    {
+        "raw_material_id": 1,
+        "ending_stock": 8,
+        "notes": "Daily stock count for coffee beans"
+    }
+]
+```
+
+**Response:**
+```json
+{
+    "message": "Daily summaries created successfully"
+}
+```
+
+### Get Daily Summary
+```http
+GET /api/v1/stock/summary
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+[
+    {
+        "id": 1,
+        "summary_date": "2024-01-03T00:00:00Z",
+        "raw_material_id": 1,
+        "beginning_stock": 10,
+        "receipts_in": 5,
+        "total_available": 14,
+        "ending_stock": 8,
+        "daily_usage": 6,
+        "theoretical_usage": 5,
+        "adjustments": -1,
+        "variance": 1,
+        "notes": "Daily stock count for coffee beans",
+        "created_at": "2024-01-03T00:00:00Z",
+        "updated_at": "2024-01-03T00:00:00Z",
+        "raw_material": {
+            "id": 1,
+            "name": "Coffee Beans",
+            "unit_of_measure": "kg",
+            "current_stock": 8
+        }
+    }
+]
+```
+
+### Get Menu Item Materials
+```http
+GET /api/v1/stock/menu-item-materials/{menu_item_id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "menu_item_id": 1,
+            "raw_material_id": 1,
+            "quantity_used": 0.02,
+            "raw_material": {
+                "id": 1,
+                "name": "Coffee Beans",
+                "unit_of_measure": "kg",
+                "current_stock": 8
+            }
+        }
+    ]
+}
+```
+
+### Add Menu Item Material
+```http
+POST /api/v1/stock/menu-item-materials
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "menu_item_id": 1,
+    "raw_material_id": 1,
+    "quantity": 0.02
+}
+```
+
+**Response:**
+```json
+{
+    "menu_item_id": 1,
+    "raw_material_id": 1,
+    "quantity_used": 0.02
+}
+```
+
+### Remove Menu Item Material
+```http
+DELETE /api/v1/stock/menu-item-materials/{menu_item_id}/{raw_material_id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "message": "Material removed from recipe successfully"
+}
+```
+
+### CURL Examples
+
+Create raw material:
+```bash
+curl -X POST "http://localhost:8080/api/v1/stock/raw-materials" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Coffee Beans","unit":"kg","stock":10}'
+```
+
+Create stock receipt:
+```bash
+curl -X POST "http://localhost:8080/api/v1/stock/receipts" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"raw_material_id":1,"quantity":5,"notes":"Received new stock of coffee beans"}'
+```
+
+Create stock adjustment:
+```bash
+curl -X POST "http://localhost:8080/api/v1/stock/adjustments" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"raw_material_id":1,"quantity":-1,"notes":"Wasted 1kg of coffee beans"}'
+```
+
+Add menu item material:
+```bash
+curl -X POST "http://localhost:8080/api/v1/stock/menu-item-materials" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"menu_item_id":1,"raw_material_id":1,"quantity":0.02}'
 ```
 
 ## Error Responses
@@ -1021,64 +2603,7 @@ GET /api/v1/dashboard/profit-analysis?start_date=2025-07-01&end_date=2025-07-31
 Authorization: Bearer <admin_or_manager_token>
 ```
 
-## Expense Management
 
-### Get Expenses
-```http
-GET /api/v1/expenses?type=raw_material&page=1&limit=10
-Authorization: Bearer <token>
-```
-
-### Create Expense (Admin/Manager)
-```http
-POST /api/v1/expenses
-Authorization: Bearer <admin_or_manager_token>
-Content-Type: application/json
-
-{
-    "type": "raw_material",
-    "category": "Coffee Beans",
-    "description": "Premium Arabica beans - 5kg",
-    "amount": 450000,
-    "date": "2025-07-09T10:00:00Z"
-}
-```
-
-**Expense Types:**
-- `raw_material`: Ingredients, coffee beans, milk, etc.
-- `operational`: Rent, utilities, staff wages, etc.
-
-### Delete Expense (Admin/Manager)
-```http
-DELETE /api/v1/expenses/{id}
-Authorization: Bearer <admin_or_manager_token>
-```
-
-**Note:** Expenses use soft deletion. Deleted expenses are excluded from all financial calculations and dashboard statistics.
-
-## User Management (Admin Only)
-
-### Get Users
-```http
-GET /api/v1/users
-Authorization: Bearer <admin_token>
-```
-
-### Update User Role
-```http
-PUT /api/v1/users/{id}/role
-Authorization: Bearer <admin_token>
-Content-Type: application/json
-
-{
-    "role": "manager"
-}
-```
-
-**Available Roles:**
-- `admin`: Full system access
-- `manager`: Can manage menu, transactions, expenses, view analytics
-- `cashier`: Can create transactions, view menu
 
 ## Error Handling
 
@@ -1158,6 +2683,10 @@ The POS system includes a web-based admin dashboard accessible through the follo
 - **Expenses**: `GET /admin/expenses` - Track expenses and costs
 - **Point of Sale**: `GET /admin/pos` - POS terminal interface
 - **User Management**: `GET /admin/users` - Manage system users (admin only)
+- **Stock Management**: `GET /admin/stock` - Manage stock levels and raw materials
+- **Material Recipe**: `GET /admin/material-recipe` - Manage material recipes for menu items
+- **Member Management**: `GET /admin/members` - Manage customer members
+- **Promo Management**: `GET /admin/promos` - Manage promotional offers
 
 ### Static Assets
 - **Static Files**: `/static/*` - CSS, JavaScript, and other assets

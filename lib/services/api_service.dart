@@ -5,6 +5,8 @@ import '../models/user.dart';
 import '../models/menu.dart';
 import '../models/transaction.dart';
 import '../models/dashboard.dart';
+import '../models/member.dart';
+import '../models/promo.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -17,14 +19,17 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.175:8080/api/v1';
-  static const String publicBaseUrl = 'http://192.168.100.175:8080/api/v1/public';
-  
+  static const String baseUrl = 'http://192.168.100.105:8080/api/v1';
+  static const String publicBaseUrl =
+      'http://192.168.100.105:8080/api/v1/public';
+
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
 
   // Get headers with authentication
-  static Future<Map<String, String>> _getHeaders({bool includeAuth = true}) async {
+  static Future<Map<String, String>> _getHeaders({
+    bool includeAuth = true,
+  }) async {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -49,12 +54,14 @@ class ApiService {
       String errorMessage = 'Request failed';
       try {
         final errorData = json.decode(response.body);
-        errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+        errorMessage =
+            errorData['message'] ?? errorData['error'] ?? errorMessage;
         print('API Error Details: $errorData');
       } catch (e) {
         print('API Error: Could not decode response body: ${response.body}');
       }
-      final fullError = 'Request failed with status ${response.statusCode}: $errorMessage (URL: ${response.request?.url})';
+      final fullError =
+          'Request failed with status ${response.statusCode}: $errorMessage (URL: ${response.request?.url})';
       print(fullError);
       throw ApiException(fullError, response.statusCode);
     }
@@ -78,37 +85,37 @@ class ApiService {
   }
 
   // Authentication API
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: await _getHeaders(includeAuth: false),
-      body: json.encode({
-        'username': email,
-        'password': password,
-      }),
+      body: json.encode({'username': email, 'password': password}),
     );
 
     print('Login response status: ${response.statusCode}'); // Debug output
     print('Login response body: ${response.body}'); // Debug output
-    
+
     final data = _handleResponse(response);
     print('Parsed login data: $data'); // Debug output
-    
+
     if (data['token'] != null) {
       await setAuthToken(data['token']);
     }
     return data;
   }
 
-  static Future<Map<String, dynamic>> register(String email, String password, String name) async {
+  static Future<Map<String, dynamic>> register(
+    String email,
+    String password,
+    String name,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: await _getHeaders(includeAuth: false),
-      body: json.encode({
-        'email': email,
-        'password': password,
-        'name': name,
-      }),
+      body: json.encode({'email': email, 'password': password, 'name': name}),
     );
 
     return _handleResponse(response);
@@ -136,12 +143,14 @@ class ApiService {
   }
 
   // Menu API
-  static Future<List<Category>> getCategories({bool usePublicEndpoint = false}) async {
+  static Future<List<Category>> getCategories({
+    bool usePublicEndpoint = false,
+  }) async {
     try {
-      final url = usePublicEndpoint 
+      final url = usePublicEndpoint
           ? '$publicBaseUrl/menu/categories'
           : '$baseUrl/menu/categories';
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
@@ -154,7 +163,9 @@ class ApiService {
 
         // According to API docs, categories are returned as direct array
         if (data is List) {
-          return (data as List).map((category) => Category.fromJson(category)).toList();
+          return (data as List)
+              .map((category) => Category.fromJson(category))
+              .toList();
         }
         return [];
       } else {
@@ -172,11 +183,13 @@ class ApiService {
     }
   }
 
-  static Future<List<MenuItem>> getMenuItems({bool usePublicEndpoint = false}) async {
-    final url = usePublicEndpoint 
+  static Future<List<MenuItem>> getMenuItems({
+    bool usePublicEndpoint = false,
+  }) async {
+    final url = usePublicEndpoint
         ? '$publicBaseUrl/menu/items'
         : '$baseUrl/menu/items';
-    
+
     final response = await http.get(
       Uri.parse(url),
       headers: await _getHeaders(includeAuth: !usePublicEndpoint),
@@ -191,20 +204,20 @@ class ApiService {
       return [];
     }
     print('Menu items received: ${itemsData.length} items');
-    
-    return itemsData
-        .map((item) => MenuItem.fromJson(item))
-        .toList();
+
+    return itemsData.map((item) => MenuItem.fromJson(item)).toList();
   }
 
   static Future<List<AddOn>> getAddOns({bool usePublicEndpoint = false}) async {
     try {
-      final url = usePublicEndpoint 
+      final url = usePublicEndpoint
           ? '$publicBaseUrl/add-ons'
           : '$baseUrl/add-ons';
-      
-      print('Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
-      
+
+      print(
+        'Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)',
+      );
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
@@ -217,16 +230,16 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty) return [];
         final jsonData = json.decode(response.body);
-        
+
         print('Add-ons API Response: $jsonData');
-        
+
         // Add-ons API returns data in {"data": [...], "limit": 10, "page": 1, "total": 12} format
         if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
           final data = jsonData['data'] as List;
           print('Add-ons received: ${data.length} items');
           return data.map((addOn) => AddOn.fromJson(addOn)).toList();
         }
-        
+
         print('Add-ons not received in expected format, returning empty');
         return [];
       } else {
@@ -245,7 +258,9 @@ class ApiService {
     }
   }
 
-  static Future<Category> createCategory(Map<String, dynamic> categoryData) async {
+  static Future<Category> createCategory(
+    Map<String, dynamic> categoryData,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/menu/categories'),
       headers: await _getHeaders(),
@@ -279,7 +294,10 @@ class ApiService {
   }
 
   // Add menu items to an existing add-on
-  static Future<void> addMenuItemsToAddOn(int addOnId, List<int> menuItemIds) async {
+  static Future<void> addMenuItemsToAddOn(
+    int addOnId,
+    List<int> menuItemIds,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/add-ons/$addOnId/menu-items'),
       headers: await _getHeaders(),
@@ -290,7 +308,10 @@ class ApiService {
   }
 
   // Remove menu items from an add-on
-  static Future<void> removeMenuItemsFromAddOn(int addOnId, List<int> menuItemIds) async {
+  static Future<void> removeMenuItemsFromAddOn(
+    int addOnId,
+    List<int> menuItemIds,
+  ) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/add-ons/$addOnId/menu-items'),
       headers: await _getHeaders(),
@@ -300,7 +321,10 @@ class ApiService {
     _handleResponse(response);
   }
 
-  static Future<Category> updateCategory(int id, Map<String, dynamic> categoryData) async {
+  static Future<Category> updateCategory(
+    int id,
+    Map<String, dynamic> categoryData,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/categories/$id'),
       headers: await _getHeaders(),
@@ -320,7 +344,10 @@ class ApiService {
     _handleResponse(response);
   }
 
-  static Future<MenuItem> updateMenuItem(int id, Map<String, dynamic> itemData) async {
+  static Future<MenuItem> updateMenuItem(
+    int id,
+    Map<String, dynamic> itemData,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/menu/items/$id'),
       headers: await _getHeaders(),
@@ -340,7 +367,10 @@ class ApiService {
     _handleResponse(response);
   }
 
-  static Future<AddOn> updateAddOn(int id, Map<String, dynamic> addOnData) async {
+  static Future<AddOn> updateAddOn(
+    int id,
+    Map<String, dynamic> addOnData,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/add-ons/$id'),
       headers: await _getHeaders(),
@@ -361,34 +391,42 @@ class ApiService {
   }
 
   // Transaction API
-  static Future<List<PaymentMethod>> getPaymentMethods({bool usePublicEndpoint = false}) async {
-    final url = usePublicEndpoint 
+  static Future<List<PaymentMethod>> getPaymentMethods({
+    bool usePublicEndpoint = false,
+  }) async {
+    final url = usePublicEndpoint
         ? '$publicBaseUrl/payment-methods'
         : '$baseUrl/payment-methods';
-    
+
     print('ApiService: Calling payment methods API: $url');
-    
+
     final response = await http.get(
       Uri.parse(url),
       headers: await _getHeaders(includeAuth: !usePublicEndpoint),
     );
 
-    print('ApiService: Payment methods response status: ${response.statusCode}');
+    print(
+      'ApiService: Payment methods response status: ${response.statusCode}',
+    );
     print('ApiService: Payment methods response body: ${response.body}');
 
     // Handle response differently for payment methods since they return a direct array
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) {
-        print('ApiService: Payment methods response body is empty, returning empty list');
+        print(
+          'ApiService: Payment methods response body is empty, returning empty list',
+        );
         return [];
       }
-      
+
       final data = json.decode(response.body);
       print('ApiService: Parsed payment methods data: $data');
-      
+
       // According to API docs, payment methods are returned as direct array
       if (data is List) {
-        final methods = (data as List).map((method) => PaymentMethod.fromJson(method)).toList();
+        final methods = (data as List)
+            .map((method) => PaymentMethod.fromJson(method))
+            .toList();
         print('ApiService: Converted ${methods.length} payment methods');
         return methods;
       }
@@ -406,12 +444,41 @@ class ApiService {
     }
   }
 
+  // Member & Promo API
+  static Future<Member> validateMember(String cardNumber) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/members/validate?card_number=$cardNumber'),
+      headers: await _getHeaders(),
+    );
+
+    final data = _handleResponse(response);
+    if (data['success'] == true && data['data'] != null) {
+      return Member.fromJson(data['data']);
+    } else {
+      throw ApiException(data['message'] ?? 'Invalid member code');
+    }
+  }
+
+  static Future<Promo> validatePromo(String promoCode) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/promos/validate?code=$promoCode'),
+      headers: await _getHeaders(),
+    );
+
+    final data = _handleResponse(response);
+
+    if (data['success'] == true && data['data'] != null) {
+      return Promo.fromJson(data['data']);
+    } else {
+      throw ApiException(data['message'] ?? 'Invalid promo code');
+    }
+  }
+
   static Future<List<Transaction>> getTransactions({int? limit}) async {
     String url = '$baseUrl/transactions';
     if (limit != null) {
       url += '?limit=$limit';
     }
-
     final response = await http.get(
       Uri.parse(url),
       headers: await _getHeaders(),
@@ -426,7 +493,7 @@ class ApiService {
       return [];
     }
     print('Transactions received: ${transactionsData.length} items');
-    
+
     return transactionsData
         .map((transaction) => Transaction.fromJson(transaction))
         .toList();
@@ -439,13 +506,13 @@ class ApiService {
     bool todayOnly = true,
   }) async {
     String url = '$baseUrl/transactions?limit=100'; // High limit to get all
-    
+
     // If todayOnly is true and no dates provided, use today's date
     if (todayOnly && startDate == null && endDate == null) {
       final today = DateTime.now();
       final todayStart = DateTime(today.year, today.month, today.day);
       final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-      
+
       url += '&start_date=${todayStart.toIso8601String().split('T')[0]}';
       url += '&end_date=${todayEnd.toIso8601String().split('T')[0]}';
     } else {
@@ -468,7 +535,7 @@ class ApiService {
     if (transactionsData == null) {
       return [];
     }
-    
+
     return transactionsData
         .map((transaction) => Transaction.fromJson(transaction))
         .toList();
@@ -501,24 +568,26 @@ class ApiService {
     return Transaction.fromJson(data);
   }
 
-  static Future<Transaction> createTransaction(Map<String, dynamic> transactionData) async {
+  static Future<Transaction> createTransaction(
+    Map<String, dynamic> transactionData,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/transactions'),
       headers: await _getHeaders(),
       body: json.encode(transactionData),
     );
-
     final data = _handleResponse(response);
     return Transaction.fromJson(data);
   }
 
-  static Future<Transaction> payTransaction(int id, String paymentMethodCode) async {
+  static Future<Transaction> payTransaction(
+    int id,
+    String paymentMethodCode,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/transactions/$id/pay'),
       headers: await _getHeaders(),
-      body: json.encode({
-        'payment_method': paymentMethodCode,
-      }),
+      body: json.encode({'payment_method': paymentMethodCode}),
     );
 
     final data = _handleResponse(response);
@@ -535,9 +604,12 @@ class ApiService {
   }
 
   // Add a new item to a pending transaction
-  static Future<TransactionItem> addItemToTransaction(int transactionId, Map<String, dynamic> itemData) async {
+  static Future<TransactionItem> addItemToTransaction(
+    int transactionId,
+    Map<String, dynamic> itemData,
+  ) async {
     print('API Service: Adding item to transaction #$transactionId: $itemData');
-    
+
     final response = await http.post(
       Uri.parse('$baseUrl/transactions/$transactionId/items'),
       headers: await _getHeaders(),
@@ -546,26 +618,32 @@ class ApiService {
 
     print('API Service: Add item response status: ${response.statusCode}');
     print('API Service: Add item response body: ${response.body}');
-    
+
     final data = _handleResponse(response);
     print('API Service: Add item parsed response: $data');
     return TransactionItem.fromJson(data);
   }
 
   // Update an existing transaction item
-  static Future<TransactionItem> updateTransactionItem(int transactionId, int itemId, Map<String, dynamic> updateData) async {
-    print('API Service: Updating item #$itemId in transaction #$transactionId: $updateData');
-    
+  static Future<TransactionItem> updateTransactionItem(
+    int transactionId,
+    int itemId,
+    Map<String, dynamic> updateData,
+  ) async {
+    print(
+      'API Service: Updating item #$itemId in transaction #$transactionId: $updateData',
+    );
+
     // Using the correct endpoint as per API docs
     final url = '$baseUrl/transactions/$transactionId/items/$itemId';
     print('API Service: Using URL: $url');
-    
+
     final headers = await _getHeaders();
     print('API Service: Headers: $headers');
-    
+
     final jsonBody = json.encode(updateData);
     print('API Service: Request body: $jsonBody');
-    
+
     try {
       final response = await http.put(
         Uri.parse(url),
@@ -575,13 +653,18 @@ class ApiService {
 
       print('API Service: Update item response status: ${response.statusCode}');
       print('API Service: Update item response body: ${response.body}');
-      
+
       // Special handling for 404 errors to be more descriptive
       if (response.statusCode == 404) {
-        print('API Service: 404 Not Found - Check if the transaction ID ($transactionId) and item ID ($itemId) are correct');
-        throw ApiException('Resource not found: The transaction or item does not exist or you do not have permission to update it', 404);
+        print(
+          'API Service: 404 Not Found - Check if the transaction ID ($transactionId) and item ID ($itemId) are correct',
+        );
+        throw ApiException(
+          'Resource not found: The transaction or item does not exist or you do not have permission to update it',
+          404,
+        );
       }
-      
+
       final data = _handleResponse(response);
       print('API Service: Update item parsed response: $data');
       return TransactionItem.fromJson(data);
@@ -595,9 +678,14 @@ class ApiService {
   }
 
   // Delete a transaction item
-  static Future<void> deleteTransactionItem(int transactionId, int itemId) async {
-    print('API Service: Deleting item #$itemId from transaction #$transactionId');
-    
+  static Future<void> deleteTransactionItem(
+    int transactionId,
+    int itemId,
+  ) async {
+    print(
+      'API Service: Deleting item #$itemId from transaction #$transactionId',
+    );
+
     final response = await http.delete(
       Uri.parse('$baseUrl/transactions/$transactionId/items/$itemId'),
       headers: await _getHeaders(),
@@ -608,18 +696,23 @@ class ApiService {
   }
 
   // Update basic transaction information
-  static Future<Transaction> updateTransaction(int id, Map<String, dynamic> updateData) async {
+  static Future<Transaction> updateTransaction(
+    int id,
+    Map<String, dynamic> updateData,
+  ) async {
     print('API Service: Updating transaction #$id: $updateData');
-    
+
     final response = await http.put(
       Uri.parse('$baseUrl/transactions/$id'),
       headers: await _getHeaders(),
       body: json.encode(updateData),
     );
 
-    print('API Service: Update transaction response status: ${response.statusCode}');
+    print(
+      'API Service: Update transaction response status: ${response.statusCode}',
+    );
     print('API Service: Update transaction response body: ${response.body}');
-    
+
     final data = _handleResponse(response);
     return Transaction.fromJson(data);
   }
@@ -635,10 +728,8 @@ class ApiService {
     // According to API docs, expenses are returned in data object
     final expensesData = data['data'] as List?;
     if (expensesData == null) return [];
-    
-    return expensesData
-        .map((expense) => Expense.fromJson(expense))
-        .toList();
+
+    return expensesData.map((expense) => Expense.fromJson(expense)).toList();
   }
 
   static Future<Expense> createExpense(Map<String, dynamic> expenseData) async {
@@ -669,7 +760,7 @@ class ApiService {
   }) async {
     String url = '$baseUrl/dashboard/sales-report';
     final queryParams = <String, String>{};
-    
+
     if (startDate != null) {
       queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
     }
@@ -698,19 +789,25 @@ class ApiService {
 
     final data = _handleResponse(response);
     return (data['top_selling_items'] as List?)
-        ?.map((item) => TopSellingItem.fromJson(item))
-        .toList() ?? [];
+            ?.map((item) => TopSellingItem.fromJson(item))
+            .toList() ??
+        [];
   }
 
   // Get add-ons for a specific menu item (includes both global and menu-specific add-ons)
-  static Future<List<AddOn>> getMenuItemAddOns(int menuItemId, {bool usePublicEndpoint = true}) async {
+  static Future<List<AddOn>> getMenuItemAddOns(
+    int menuItemId, {
+    bool usePublicEndpoint = true,
+  }) async {
     try {
-      final url = usePublicEndpoint 
+      final url = usePublicEndpoint
           ? '$publicBaseUrl/menu-item-add-ons/$menuItemId'
           : '$baseUrl/menu-item-add-ons/$menuItemId';
-      
-      print('Menu Item Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
-      
+
+      print(
+        'Menu Item Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)',
+      );
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
@@ -722,17 +819,19 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty) return [];
         final jsonData = json.decode(response.body);
-        
+
         print('Menu Item Add-ons API Response: $jsonData');
-        
+
         // API returns {"add_ons": [...], "menu_item": {...}}
         if (jsonData is Map<String, dynamic> && jsonData['add_ons'] is List) {
           final data = jsonData['add_ons'] as List;
           print('Menu Item Add-ons received: ${data.length} items');
           return data.map((addOn) => AddOn.fromJson(addOn)).toList();
         }
-        
-        print('Menu Item Add-ons not received in expected format, returning empty');
+
+        print(
+          'Menu Item Add-ons not received in expected format, returning empty',
+        );
         return [];
       } else {
         String errorMessage = 'Request failed';
@@ -751,14 +850,19 @@ class ApiService {
   }
 
   // Get menu items associated with a specific add-on
-  static Future<List<MenuItem>> getAddOnMenuItems(int addOnId, {bool usePublicEndpoint = true}) async {
+  static Future<List<MenuItem>> getAddOnMenuItems(
+    int addOnId, {
+    bool usePublicEndpoint = true,
+  }) async {
     try {
-      final url = usePublicEndpoint 
+      final url = usePublicEndpoint
           ? '$publicBaseUrl/add-ons/$addOnId'
           : '$baseUrl/add-ons/$addOnId';
-      
-      print('Add-on Menu Items API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)');
-      
+
+      print(
+        'Add-on Menu Items API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)',
+      );
+
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
@@ -770,17 +874,20 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty) return [];
         final jsonData = json.decode(response.body);
-        
+
         print('Add-on Menu Items API Response: $jsonData');
-        
+
         // API returns add-on data with menu_items array
-        if (jsonData is Map<String, dynamic> && jsonData['menu_items'] is List) {
+        if (jsonData is Map<String, dynamic> &&
+            jsonData['menu_items'] is List) {
           final data = jsonData['menu_items'] as List;
           print('Add-on Menu Items received: ${data.length} items');
           return data.map((menuItem) => MenuItem.fromJson(menuItem)).toList();
         }
-        
-        print('Add-on Menu Items not received in expected format, returning empty');
+
+        print(
+          'Add-on Menu Items not received in expected format, returning empty',
+        );
         return [];
       } else {
         String errorMessage = 'Request failed';
@@ -797,5 +904,4 @@ class ApiService {
       return [];
     }
   }
-
 }
