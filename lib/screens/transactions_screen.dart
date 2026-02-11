@@ -20,6 +20,7 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _customerNameController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -34,10 +35,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _customerNameController.dispose();
     super.dispose();
   }
 
   void _loadTransactions() {
+    _customerNameController.clear();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyDateFilter();
     });
@@ -46,12 +49,18 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   // Apply date filter and load transactions
   void _applyDateFilter() {
     final transactionProvider = context.read<TransactionProvider>();
-    
+    final customerName = _customerNameController.text;
+
     if (_startDate != null && _endDate != null) {
-      // Load transactions for selected date range
+      // Load transactions for selected date range and customer name
       transactionProvider.loadTransactionsByDateRange(
         startDate: _startDate!,
         endDate: _endDate!,
+        customerName: customerName,
+      );
+    } else if (customerName.isNotEmpty) {
+      transactionProvider.loadTransactionsByCustomerName(
+        customerName: customerName,
       );
     } else {
       // Load today's transactions by default (gets all without limit)
@@ -273,6 +282,26 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _customerNameController,
+                        decoration: const InputDecoration(
+                          hintText: 'Search by customer name...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    EnhancedButton(
+                      text: 'Search',
+                      onPressed: _applyDateFilter,
+                    ),
+                  ],
+                ),
                 if (_startDate != null || _endDate != null) ...[
                   const SizedBox(height: 12),
                   Center(
@@ -284,6 +313,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         setState(() {
                           _startDate = null;
                           _endDate = null;
+                          _customerNameController.clear();
                         });
                         _applyDateFilter();
                       },
@@ -1252,7 +1282,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         kembalian: kembalian,
                       );
                       
-                      if (!context.mounted) return;
+                      if (!context.mounted) return; 
                       
                       if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(

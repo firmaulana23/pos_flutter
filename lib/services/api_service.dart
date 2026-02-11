@@ -19,9 +19,9 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.105:8080/api/v1';
+  static const String baseUrl = 'http://192.168.100.129:8080/api/v1';
   static const String publicBaseUrl =
-      'http://192.168.100.105:8080/api/v1/public';
+      'http://192.168.100.129:8080/api/v1/public';
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
@@ -474,38 +474,14 @@ class ApiService {
     }
   }
 
-  static Future<List<Transaction>> getTransactions({int? limit}) async {
-    String url = '$baseUrl/transactions';
-    if (limit != null) {
-      url += '?limit=$limit';
-    }
-    final response = await http.get(
-      Uri.parse(url),
-      headers: await _getHeaders(),
-    );
-
-    final data = _handleResponse(response);
-    print('Transactions API Response: $data');
-    // According to API docs, transactions are returned in data object
-    final transactionsData = data['data'] as List?;
-    if (transactionsData == null) {
-      print('Transactions data field is null, returning empty');
-      return [];
-    }
-    print('Transactions received: ${transactionsData.length} items');
-
-    return transactionsData
-        .map((transaction) => Transaction.fromJson(transaction))
-        .toList();
-  }
-
   // Get all transactions with optional date filter (defaults to today)
   static Future<List<Transaction>> getAllTransactions({
     DateTime? startDate,
     DateTime? endDate,
     bool todayOnly = true,
+    String? customerName,
   }) async {
-    String url = '$baseUrl/transactions?limit=100'; // High limit to get all
+    String url = '$baseUrl/transactions?limit=1000'; // High limit to get all
 
     // If todayOnly is true and no dates provided, use today's date
     if (todayOnly && startDate == null && endDate == null) {
@@ -523,6 +499,9 @@ class ApiService {
       if (endDate != null) {
         url += '&end_date=${endDate.toIso8601String().split('T')[0]}';
       }
+    }
+    if (customerName != null && customerName.isNotEmpty) {
+      url += '&customer_name=$customerName';
     }
 
     final response = await http.get(

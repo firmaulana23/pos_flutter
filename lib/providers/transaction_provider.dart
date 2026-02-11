@@ -9,11 +9,13 @@ class TransactionProvider with ChangeNotifier {
   List<PaymentMethod> _paymentMethods = [];
   bool _isLoading = false;
   String? _error;
+  String? _customerName;
 
   List<Transaction> get transactions => _transactions;
   List<PaymentMethod> get paymentMethods => _paymentMethods;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get customerName => _customerName;
 
   List<Transaction> get pendingTransactions => 
       _transactions.where((t) => t.isPending).toList();
@@ -35,10 +37,12 @@ class TransactionProvider with ChangeNotifier {
     DateTime? startDate,
     DateTime? endDate,
     bool todayOnly = true,
+    String? customerName,
   }) async {
     try {
       _setLoading(true);
       _setError(null);
+      _customerName = customerName;
       
       print('TransactionProvider: Starting to load transactions...');
       
@@ -51,6 +55,7 @@ class TransactionProvider with ChangeNotifier {
         startDate: startDate,
         endDate: endDate,
         todayOnly: todayOnly,
+        customerName: customerName,
       );
       print('TransactionProvider: Loaded ${_transactions.length} transactions');
       notifyListeners();
@@ -68,6 +73,7 @@ class TransactionProvider with ChangeNotifier {
 
   // Load today's transactions (default behavior)
   Future<void> loadTodayTransactions() async {
+    _customerName = null;
     await loadTransactions(todayOnly: true);
   }
 
@@ -75,11 +81,23 @@ class TransactionProvider with ChangeNotifier {
   Future<void> loadTransactionsByDateRange({
     required DateTime startDate,
     required DateTime endDate,
+    String? customerName,
   }) async {
     await loadTransactions(
       startDate: startDate,
       endDate: endDate,
       todayOnly: false,
+      customerName: customerName,
+    );
+  }
+
+  // Load transactions by customer name
+  Future<void> loadTransactionsByCustomerName({
+    String? customerName,
+  }) async {
+    await loadTransactions(
+      todayOnly: false,
+      customerName: customerName,
     );
   }
 
