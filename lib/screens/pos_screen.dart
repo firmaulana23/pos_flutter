@@ -44,7 +44,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final menuProvider = context.read<MenuProvider>();
       final transactionProvider = context.read<TransactionProvider>();
-      
+
       menuProvider.loadAllMenuData(usePublicEndpoint: true);
       transactionProvider.loadPaymentMethods(usePublicEndpoint: true);
     });
@@ -133,9 +133,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
             children: [
               if (_showSearchBar) _buildSearchBar(),
               _buildCategoryTabs(categories),
-              Expanded(
-                child: _buildMenuGrid(menuProvider),
-              ),
+              Expanded(child: _buildMenuGrid(menuProvider)),
             ],
           );
         },
@@ -238,7 +236,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _searchQuery.isNotEmpty ? AppColors.primary : AppColors.inputBorder,
+                  color: _searchQuery.isNotEmpty
+                      ? AppColors.primary
+                      : AppColors.inputBorder,
                   width: _searchQuery.isNotEmpty ? 1.5 : 1,
                 ),
               ),
@@ -246,13 +246,12 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Cari menu favorit Anda...',
-                  hintStyle: TextStyle(
-                    color: AppColors.disabled,
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: AppColors.disabled, fontSize: 14),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: _searchQuery.isNotEmpty ? AppColors.primary : AppColors.disabled,
+                    color: _searchQuery.isNotEmpty
+                        ? AppColors.primary
+                        : AppColors.disabled,
                     size: 22,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -269,7 +268,10 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
                 textInputAction: TextInputAction.search,
                 style: const TextStyle(fontSize: 14),
@@ -316,19 +318,16 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    
+
     final categoriesWithAll = [allCategoriesOption, ...categories];
-    
+
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.divider,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: AppColors.divider, width: 0.5),
         ),
       ),
       child: ListView.builder(
@@ -352,12 +351,19 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.background,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.background,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.inputBorder,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.inputBorder,
                       width: 1.5,
                     ),
                     boxShadow: isSelected
@@ -377,7 +383,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                         Icon(
                           Icons.grid_view_rounded,
                           size: 16,
-                          color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
+                          color: isSelected
+                              ? AppColors.onPrimary
+                              : AppColors.onSurface,
                         ),
                         const SizedBox(width: 6),
                       ] else if (isSelected) ...[
@@ -391,8 +399,12 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                       Text(
                         category.name,
                         style: TextStyle(
-                          color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          color: isSelected
+                              ? AppColors.onPrimary
+                              : AppColors.onSurface,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           fontSize: 14,
                         ),
                       ),
@@ -412,14 +424,17 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     if (categories.isEmpty) return const SizedBox.shrink();
 
     List<MenuItem> menuItems;
-    
+
     // If searching, show all matching items regardless of category
     if (_searchQuery.isNotEmpty) {
       menuItems = menuProvider.menuItems
-          .where((item) => 
-              item.isAvailable && 
-              (item.name.toLowerCase().contains(_searchQuery) ||
-               (item.description?.toLowerCase().contains(_searchQuery) ?? false)))
+          .where(
+            (item) =>
+                item.isAvailable &&
+                (item.name.toLowerCase().contains(_searchQuery) ||
+                    (item.description?.toLowerCase().contains(_searchQuery) ??
+                        false)),
+          )
           .toList();
     } else {
       // If "All Categories" is selected (index 0), show all menu items
@@ -430,26 +445,30 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
       } else {
         // Show items from selected category (adjust index by -1 due to "All Categories")
         final selectedCategory = categories[_selectedCategoryIndex - 1];
-        menuItems = menuProvider.getMenuItemsByCategory(selectedCategory.id)
+        menuItems = menuProvider
+            .getMenuItemsByCategory(selectedCategory.id)
             .where((item) => item.isAvailable)
             .toList();
       }
     }
 
     // Sort menu items alphabetically (A-Z)
-    menuItems.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    menuItems.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
 
     if (menuItems.isEmpty) {
       String emptyMessage;
       if (_searchQuery.isNotEmpty) {
-        emptyMessage = 'Tidak ada menu yang cocok dengan pencarian "$_searchQuery"';
+        emptyMessage =
+            'Tidak ada menu yang cocok dengan pencarian "$_searchQuery"';
       } else if (_selectedCategoryIndex == 0) {
         emptyMessage = 'Belum ada menu yang tersedia';
       } else {
         final selectedCategory = categories[_selectedCategoryIndex - 1];
         emptyMessage = 'Belum ada menu di kategori ${selectedCategory.name}';
       }
-      
+
       return EmptyStateWidget(
         title: 'Tidak ada menu',
         subtitle: emptyMessage,
@@ -475,15 +494,13 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
     final menuProvider = context.read<MenuProvider>();
     final category = menuProvider.getCategoryById(menuItem.categoryId);
     final showCategory = _selectedCategoryIndex == 0 || _searchQuery.isNotEmpty;
-    
+
     return Hero(
       tag: 'menu-item-${menuItem.id}',
       child: Card(
         elevation: 3,
         shadowColor: AppColors.cardShadow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: InkWell(
           onTap: () => _addToCart(menuItem),
           borderRadius: BorderRadius.circular(16),
@@ -526,10 +543,12 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                               ? Image.network(
                                   menuItem.imageUrl!,
                                   fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return _buildShimmerImage();
-                                  },
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return _buildShimmerImage();
+                                      },
                                   errorBuilder: (context, error, stackTrace) {
                                     return _buildPlaceholderImage();
                                   },
@@ -563,13 +582,18 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                           top: 8,
                           left: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -587,9 +611,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                         ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Menu Item Name
                   Text(
                     menuItem.name,
@@ -600,7 +624,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   if (menuItem.description != null) ...[
                     const SizedBox(height: 6),
                     Text(
@@ -613,9 +637,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Price and Add Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -623,17 +647,21 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             AppFormatters.formatCurrency(menuItem.price),
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                           ),
                         ),
                       ),
@@ -651,7 +679,9 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
                           ],
                         ),
                         child: IconButton(
-                          onPressed: menuItem.isAvailable ? () => _addToCart(menuItem) : null,
+                          onPressed: menuItem.isAvailable
+                              ? () => _addToCart(menuItem)
+                              : null,
                           icon: const Icon(
                             Icons.add_rounded,
                             color: AppColors.onPrimary,
@@ -682,10 +712,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.surfaceVariant,
-            AppColors.background,
-          ],
+          colors: [AppColors.surfaceVariant, AppColors.background],
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -693,11 +720,7 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.restaurant_rounded,
-              size: 48,
-              color: AppColors.disabled,
-            ),
+            Icon(Icons.restaurant_rounded, size: 48, color: AppColors.disabled),
             const SizedBox(height: 8),
             Text(
               'Gambar menu',
@@ -734,17 +757,24 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
 
   void _addToCart(MenuItem menuItem) async {
     final menuProvider = context.read<MenuProvider>();
-    
-    debugPrint('POSScreen: Adding ${menuItem.name} to cart, id: ${menuItem.id}');
-    
+
+    debugPrint(
+      'POSScreen: Adding ${menuItem.name} to cart, id: ${menuItem.id}',
+    );
+
     try {
       // Load add-ons specific to this menu item
       debugPrint('POSScreen: Loading add-ons for menu item ${menuItem.id}');
-      await menuProvider.loadMenuItemAddOns(menuItem.id, usePublicEndpoint: true);
+      await menuProvider.loadMenuItemAddOns(
+        menuItem.id,
+        usePublicEndpoint: true,
+      );
       final availableAddOns = menuProvider.menuItemAddOns;
 
-      debugPrint('POSScreen: Found ${availableAddOns.length} add-ons for ${menuItem.name}');
-      
+      debugPrint(
+        'POSScreen: Found ${availableAddOns.length} add-ons for ${menuItem.name}',
+      );
+
       if (availableAddOns.isNotEmpty) {
         debugPrint('POSScreen: Showing add-on selection dialog');
         _showAddOnSelectionDialog(menuItem, availableAddOns);
@@ -769,7 +799,10 @@ class _POSScreenState extends State<POSScreen> with TickerProviderStateMixin {
           menuItem: menuItem,
           addOns: addOns,
           onConfirm: (selectedAddOns) {
-            context.read<CartProvider>().addItem(menuItem, addOns: selectedAddOns);
+            context.read<CartProvider>().addItem(
+              menuItem,
+              addOns: selectedAddOns,
+            );
             _showSnackBar('${menuItem.name} ditambahkan ke keranjang');
           },
         );
@@ -825,27 +858,31 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
           mainAxisSize: MainAxisSize.min,
           children: widget.addOns.map((addOn) {
             final quantity = _selectedAddOns[addOn.id] ?? 0;
-            
+
             return ListTile(
               title: Text(addOn.name),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppFormatters.formatCurrency(addOn.price)),
-                  if (addOn.description != null && addOn.description!.isNotEmpty) ...[
+                  if (addOn.description != null &&
+                      addOn.description!.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       addOn.description!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                   const SizedBox(height: 2),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: addOn.menuItemId == null 
+                      color: addOn.menuItemId == null
                           ? Colors.blue.withValues(alpha: 0.1)
                           : Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -853,7 +890,7 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
                     child: Text(
                       addOn.menuItemId == null ? 'Global' : 'Menu Spesifik',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: addOn.menuItemId == null 
+                        color: addOn.menuItemId == null
                             ? Colors.blue[700]
                             : Colors.green[700],
                         fontWeight: FontWeight.w500,
@@ -892,13 +929,11 @@ class _AddOnSelectionDialogState extends State<AddOnSelectionDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            final selectedAddOns = _selectedAddOns.entries
-                .map((entry) {
-                  final addOn = widget.addOns.firstWhere((a) => a.id == entry.key);
-                  return CartAddOn(addOn: addOn, quantity: entry.value);
-                })
-                .toList();
-            
+            final selectedAddOns = _selectedAddOns.entries.map((entry) {
+              final addOn = widget.addOns.firstWhere((a) => a.id == entry.key);
+              return CartAddOn(addOn: addOn, quantity: entry.value);
+            }).toList();
+
             widget.onConfirm(selectedAddOns);
             Navigator.of(context).pop();
           },
@@ -925,7 +960,8 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
   void initState() {
     super.initState();
     final cartProvider = context.read<CartProvider>();
-    _discountController.text = cartProvider.manualDiscountPercentage.toStringAsFixed(0);
+    _discountController.text = cartProvider.manualDiscountPercentage
+        .toStringAsFixed(0);
   }
 
   @override
@@ -956,7 +992,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -970,7 +1006,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                 Consumer<CartProvider>(
                   builder: (context, cartProvider, child) {
                     if (cartProvider.isEmpty) return const SizedBox.shrink();
-                    
+
                     return TextButton(
                       onPressed: () {
                         cartProvider.clear();
@@ -983,9 +1019,9 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
               ],
             ),
           ),
-          
+
           const Divider(),
-          
+
           // Cart Items
           Expanded(
             child: Consumer<CartProvider>(
@@ -1008,7 +1044,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
               },
             ),
           ),
-          
+
           // Summary and Action Buttons
           _buildCartSummary(context),
         ],
@@ -1016,9 +1052,13 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
     );
   }
 
-  Widget _buildCartItem(BuildContext context, CartProvider cartProvider, int index) {
+  Widget _buildCartItem(
+    BuildContext context,
+    CartProvider cartProvider,
+    int index,
+  ) {
     final item = cartProvider.items[index];
-    
+
     return CustomCard(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -1048,45 +1088,51 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
               ),
               QuantitySelector(
                 quantity: item.quantity,
-                onIncrement: () => cartProvider.updateItemQuantity(index, item.quantity + 1),
-                onDecrement: () => cartProvider.updateItemQuantity(index, item.quantity - 1),
+                onIncrement: () =>
+                    cartProvider.updateItemQuantity(index, item.quantity + 1),
+                onDecrement: () =>
+                    cartProvider.updateItemQuantity(index, item.quantity - 1),
               ),
             ],
           ),
-          
+
           if (item.addOns.isNotEmpty) ...[
             const SizedBox(height: 8),
             const Divider(height: 1),
             const SizedBox(height: 8),
-            ...item.addOns.map((addOn) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '+ ${addOn.addOn.name} (${addOn.quantity * item.quantity}x)',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    AppFormatters.formatCurrency(addOn.totalPrice * item.quantity),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w500,
+            ...item.addOns.map(
+              (addOn) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '+ ${addOn.addOn.name} (${addOn.quantity * item.quantity}x)',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
-                ],
+                    Text(
+                      AppFormatters.formatCurrency(
+                        addOn.totalPrice * item.quantity,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            )),
+            ),
           ],
-          
+
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Subtotal:',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               Text(
                 AppFormatters.formatCurrency(item.total),
@@ -1124,12 +1170,14 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Text(
-                    AppFormatters.formatCurrency(cartProvider.subtotal + cartProvider.addOnsTotal),
+                    AppFormatters.formatCurrency(
+                      cartProvider.subtotal + cartProvider.addOnsTotal,
+                    ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
 
               // Member & Promo Section
@@ -1150,7 +1198,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                       decoration: const InputDecoration(
                         isDense: true,
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         prefixText: 'Rp ',
                       ),
                       onChanged: (value) {
@@ -1161,10 +1212,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
-              
-              // Discount input  
+
+              // Discount input
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1179,7 +1230,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                       decoration: const InputDecoration(
                         isDense: true,
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         suffixText: '%',
                       ),
                       onChanged: (value) {
@@ -1190,7 +1244,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
@@ -1203,7 +1257,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Diskon Member (${cartProvider.member?.fullName})'),
-                      Text('- ${AppFormatters.formatCurrency(cartProvider.memberDiscount)}', style: const TextStyle(color: AppColors.success)),
+                      Text(
+                        '- ${AppFormatters.formatCurrency(cartProvider.memberDiscount)}',
+                        style: const TextStyle(color: AppColors.success),
+                      ),
                     ],
                   ),
                 ),
@@ -1215,19 +1272,25 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Diskon Promo (${cartProvider.promo?.name})'),
-                      Text('- ${AppFormatters.formatCurrency(cartProvider.promoDiscount)}', style: const TextStyle(color: AppColors.success)),
+                      Text(
+                        '- ${AppFormatters.formatCurrency(cartProvider.promoDiscount)}',
+                        style: const TextStyle(color: AppColors.success),
+                      ),
                     ],
                   ),
                 ),
-              
-               if (cartProvider.discount > 0)
+
+              if (cartProvider.discount > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Diskon Manual'),
-                      Text('- ${AppFormatters.formatCurrency(cartProvider.discount)}', style: const TextStyle(color: AppColors.success)),
+                      Text(
+                        '- ${AppFormatters.formatCurrency(cartProvider.discount)}',
+                        style: const TextStyle(color: AppColors.success),
+                      ),
                     ],
                   ),
                 ),
@@ -1251,9 +1314,9 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               Row(
                 children: [
                   Expanded(
@@ -1279,7 +1342,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
     );
   }
 
-  Widget _buildMemberPromoSection(BuildContext context, CartProvider cartProvider) {
+  Widget _buildMemberPromoSection(
+    BuildContext context,
+    CartProvider cartProvider,
+  ) {
     return Column(
       children: [
         if (cartProvider.member == null)
@@ -1289,7 +1355,9 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             hintText: 'Kode Member',
             onApply: () async {
               if (_memberController.text.isNotEmpty) {
-                final success = await cartProvider.applyMember(_memberController.text);
+                final success = await cartProvider.applyMember(
+                  _memberController.text,
+                );
                 if (success) {
                   _memberController.clear();
                 }
@@ -1312,7 +1380,9 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             hintText: 'Kode Promo',
             onApply: () async {
               if (_promoController.text.isNotEmpty) {
-                final success = await cartProvider.applyPromo(_promoController.text);
+                final success = await cartProvider.applyPromo(
+                  _promoController.text,
+                );
                 if (success) {
                   _promoController.clear();
                 }
@@ -1324,10 +1394,11 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
           _buildAppliedCodeInfo(
             context,
             title: cartProvider.promo!.name,
-            subtitle: 'Diskon ${AppFormatters.formatCurrency(cartProvider.promoDiscount)} diterapkan',
+            subtitle:
+                'Diskon ${AppFormatters.formatCurrency(cartProvider.promoDiscount)} diterapkan',
             onRemove: () => cartProvider.removePromo(),
           ),
-        
+
         if (cartProvider.validationError != null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
@@ -1336,7 +1407,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
               style: const TextStyle(color: AppColors.error),
             ),
           ),
-        
+
         const SizedBox(height: 8),
       ],
     );
@@ -1372,7 +1443,13 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
             height: 40,
             child: ElevatedButton(
               onPressed: isLoading ? null : onApply,
-              child: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Apply'),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Apply'),
             ),
           ),
         ],
@@ -1410,13 +1487,17 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
       return; // User cancelled or didn't enter a name
     }
 
-    final transaction = await cartProvider.saveTransaction(customerName: customerName.trim());
-    
+    final transaction = await cartProvider.saveTransaction(
+      customerName: customerName.trim(),
+    );
+
     if (transaction != null && context.mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Transaksi ${AppFormatters.formatTransactionId(transaction.id!)} disimpan'),
+          content: Text(
+            'Transaksi ${AppFormatters.formatTransactionId(transaction.id!)} disimpan',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -1425,7 +1506,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
 
   void _processPayment(BuildContext context, CartProvider cartProvider) async {
     final transactionProvider = context.read<TransactionProvider>();
-    
+
     // First get customer name
     final customerName = await showDialog<String>(
       context: context,
@@ -1435,12 +1516,12 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
     if (customerName == null || customerName.trim().isEmpty) {
       return; // User cancelled or didn't enter a name
     }
-    
+
     // Try to load payment methods if they're empty
     if (transactionProvider.paymentMethods.isEmpty) {
       await transactionProvider.loadPaymentMethods(usePublicEndpoint: true);
     }
-    
+
     final paymentMethods = transactionProvider.paymentMethods;
 
     if (paymentMethods.isEmpty) {
@@ -1464,67 +1545,77 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
 
       if (selectedPaymentMethod.code.toLowerCase() == 'cash') {
         // Show dialog for uang diterima
-        uangDiterima = await showDialog<double>(
-          context: context,
-          builder: (context) {
-            final TextEditingController controller = TextEditingController();
-            double change = 0.0;
-            return StatefulBuilder(
-              builder: (context, setState) {
-                double total = cartProvider.total;
-                double received = double.tryParse(controller.text) ?? 0.0;
-                change = (received - total).clamp(0.0, double.infinity);
-                return AlertDialog(
-                  title: const Text('Pembayaran'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        uangDiterima =
+            await showDialog<double>(
+              context: context,
+              builder: (context) {
+                final TextEditingController controller =
+                    TextEditingController();
+                double change = 0.0;
+                return StatefulBuilder(
+                  builder: (context, setState) {
+                    double total = cartProvider.total;
+                    double received = double.tryParse(controller.text) ?? 0.0;
+                    change = (received - total).clamp(0.0, double.infinity);
+                    return AlertDialog(
+                      title: const Text('Pembayaran'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Total'),
-                          Text(AppFormatters.formatCurrency(total)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Total'),
+                              Text(AppFormatters.formatCurrency(total)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            autofocus: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Uang Diterima',
+                              prefixText: 'Rp ',
+                            ),
+                            onChanged: (val) => setState(() {}),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Kembalian'),
+                              Text(AppFormatters.formatCurrency(change)),
+                            ],
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: controller,
-                        keyboardType: TextInputType.number,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Uang Diterima',
-                          prefixText: 'Rp ',
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Batal'),
                         ),
-                        onChanged: (val) => setState(() {}),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Kembalian'),
-                          Text(AppFormatters.formatCurrency(change)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Batal'),
-                    ),
-                    ElevatedButton(
-                      onPressed: (double.tryParse(controller.text) ?? 0.0) >= total
-                          ? () => Navigator.pop(context, double.tryParse(controller.text) ?? 0.0)
-                          : null,
-                      child: const Text('Bayar'),
-                    ),
-                  ],
+                        ElevatedButton(
+                          onPressed:
+                              (double.tryParse(controller.text) ?? 0.0) >= total
+                              ? () => Navigator.pop(
+                                  context,
+                                  double.tryParse(controller.text) ?? 0.0,
+                                )
+                              : null,
+                          child: const Text('Bayar'),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
-            );
-          },
-        ) ?? 0.0;
-        kembalian = (uangDiterima - cartProvider.total).clamp(0.0, double.infinity);
+            ) ??
+            0.0;
+        kembalian = (uangDiterima - cartProvider.total).clamp(
+          0.0,
+          double.infinity,
+        );
         if (uangDiterima < cartProvider.total) return;
       } else {
         uangDiterima = cartProvider.total;
@@ -1532,8 +1623,10 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
       }
 
       // First create the transaction through cart provider
-      final transaction = await cartProvider.saveTransaction(customerName: customerName.trim());
-      
+      final transaction = await cartProvider.saveTransaction(
+        customerName: customerName.trim(),
+      );
+
       if (transaction != null) {
         // Then process payment through transaction provider (which includes automatic receipt printing)
         final success = await transactionProvider.payTransaction(
@@ -1542,19 +1635,23 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
           uangDiterima: uangDiterima,
           kembalian: kembalian,
         );
-        
+
         if (success && context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Pembayaran ${AppFormatters.formatTransactionId(transaction.id!)} berhasil'),
+              content: Text(
+                'Pembayaran ${AppFormatters.formatTransactionId(transaction.id!)} berhasil',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
         } else if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Gagal memproses pembayaran: ${transactionProvider.error ?? 'Error tidak diketahui'}'),
+              content: Text(
+                'Gagal memproses pembayaran: ${transactionProvider.error ?? 'Error tidak diketahui'}',
+              ),
               backgroundColor: AppColors.error,
             ),
           );
@@ -1574,10 +1671,7 @@ class _CartBottomSheetState extends State<CartBottomSheet> {
 class PaymentMethodDialog extends StatelessWidget {
   final List<PaymentMethod> paymentMethods;
 
-  const PaymentMethodDialog({
-    super.key,
-    required this.paymentMethods,
-  });
+  const PaymentMethodDialog({super.key, required this.paymentMethods});
 
   @override
   Widget build(BuildContext context) {
@@ -1588,7 +1682,9 @@ class PaymentMethodDialog extends StatelessWidget {
         children: paymentMethods.map((method) {
           return ListTile(
             title: Text(method.name),
-            subtitle: method.description != null ? Text(method.description!) : null,
+            subtitle: method.description != null
+                ? Text(method.description!)
+                : null,
             onTap: () => Navigator.of(context).pop(method),
           );
         }).toList(),

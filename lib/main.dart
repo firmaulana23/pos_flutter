@@ -14,15 +14,15 @@ import 'services/thermal_printer_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   await ThermalPrinterService.tryReconnectPrinter();
-  
+
   runApp(const MyApp());
 }
 
@@ -59,7 +59,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -67,19 +66,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    await Future.delayed(const Duration(seconds: 2)); // Show splash for 2 seconds
-    
+    await Future.delayed(
+      const Duration(seconds: 2),
+    ); // Show splash for 2 seconds
+
     if (!mounted) return;
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.checkAuthStatus();
-    
+
     if (!mounted) return;
-    
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => authProvider.isAuthenticated 
-            ? const MainScreen() 
+        builder: (context) => authProvider.isAuthenticated
+            ? const MainScreen()
             : const LoginScreen(),
       ),
     );
@@ -125,9 +126,9 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             Text(
               'Point of Sale System',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.white70,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
             ),
             const SizedBox(height: 40),
             const CircularProgressIndicator(

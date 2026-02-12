@@ -17,10 +17,7 @@ class Permissions {
       'process_payments',
       'view_reports',
     ],
-    'cashier': [
-      'view_transactions',
-      'process_payments',
-    ],
+    'cashier': ['view_transactions', 'process_payments'],
   };
 
   // Check if user has specific permission
@@ -47,15 +44,15 @@ class Permissions {
   // Get list of screens available for role
   static List<String> getAvailableScreens(String userRole) {
     final List<String> screens = ['pos', 'transactions', 'profile'];
-    
+
     if (canManageMenu(userRole)) {
       screens.insert(2, 'menu');
     }
-    
+
     if (canViewDashboard(userRole)) {
       screens.insert(screens.length - 1, 'dashboard');
     }
-    
+
     return screens;
   }
 

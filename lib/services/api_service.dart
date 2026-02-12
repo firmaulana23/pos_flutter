@@ -19,9 +19,9 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.129:8080/api/v1';
+  static const String baseUrl = 'http://192.168.1.148:8080/api/v1';
   static const String publicBaseUrl =
-      'http://192.168.100.129:8080/api/v1/public';
+      'http://192.168.1.148:8080/api/v1/public';
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
@@ -696,55 +696,20 @@ class ApiService {
     return Transaction.fromJson(data);
   }
 
-  // Expense API
-  static Future<List<Expense>> getExpenses() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/expenses'),
-      headers: await _getHeaders(),
-    );
-
-    final data = _handleResponse(response);
-    // According to API docs, expenses are returned in data object
-    final expensesData = data['data'] as List?;
-    if (expensesData == null) return [];
-
-    return expensesData.map((expense) => Expense.fromJson(expense)).toList();
-  }
-
-  static Future<Expense> createExpense(Map<String, dynamic> expenseData) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/expenses'),
-      headers: await _getHeaders(),
-      body: json.encode(expenseData),
-    );
-
-    final data = _handleResponse(response);
-    return Expense.fromJson(data);
-  }
-
   // Dashboard API
-  static Future<DashboardStats> getDashboardStats() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/stats'),
-      headers: await _getHeaders(),
-    );
-
-    final data = _handleResponse(response);
-    return DashboardStats.fromJson(data);
-  }
-
-  static Future<SalesReport> getSalesReport({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    String url = '$baseUrl/dashboard/sales-report';
+  static Future<DashboardData> getDashboardData(DateTime? date) async {
+    String url = '$baseUrl/dashboard/data';
     final queryParams = <String, String>{};
 
-    if (startDate != null) {
-      queryParams['start_date'] = startDate.toIso8601String().split('T')[0];
-    }
-    if (endDate != null) {
-      queryParams['end_date'] = endDate.toIso8601String().split('T')[0];
+    if (date != null) {
+      final dateString = date.toIso8601String().split('T')[0];
+      queryParams['start_date'] = dateString;
+      queryParams['end_date'] = dateString;
+    } else {
+      final today = DateTime.now();
+      final todayString = today.toIso8601String().split('T')[0];
+      queryParams['start_date'] = todayString;
+      queryParams['end_date'] = todayString;
     }
 
     if (queryParams.isNotEmpty) {
@@ -757,20 +722,7 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return SalesReport.fromJson(data);
-  }
-
-  static Future<List<TopSellingItem>> getProfitAnalysis() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/profit-analysis'),
-      headers: await _getHeaders(),
-    );
-
-    final data = _handleResponse(response);
-    return (data['top_selling_items'] as List?)
-            ?.map((item) => TopSellingItem.fromJson(item))
-            .toList() ??
-        [];
+    return DashboardData.fromJson(data);
   }
 
   // Get add-ons for a specific menu item (includes both global and menu-specific add-ons)

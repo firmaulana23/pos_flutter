@@ -17,10 +17,10 @@ class TransactionProvider with ChangeNotifier {
   String? get error => _error;
   String? get customerName => _customerName;
 
-  List<Transaction> get pendingTransactions => 
+  List<Transaction> get pendingTransactions =>
       _transactions.where((t) => t.isPending).toList();
-  
-  List<Transaction> get paidTransactions => 
+
+  List<Transaction> get paidTransactions =>
       _transactions.where((t) => t.isPaid).toList();
 
   void _setLoading(bool loading) {
@@ -43,13 +43,13 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
       _customerName = customerName;
-      
+
       print('TransactionProvider: Starting to load transactions...');
-      
+
       // Check if we have an auth token
       final token = await ApiService.getAuthToken();
       print('TransactionProvider: Auth token exists: ${token != null}');
-      
+
       // Use getAllTransactions with date filtering
       _transactions = await ApiService.getAllTransactions(
         startDate: startDate,
@@ -63,7 +63,9 @@ class TransactionProvider with ChangeNotifier {
       print('TransactionProvider: Error loading transactions: $e');
       print('TransactionProvider: Error type: ${e.runtimeType}');
       if (e is ApiException) {
-        print('TransactionProvider: API Exception - Status Code: ${e.statusCode}');
+        print(
+          'TransactionProvider: API Exception - Status Code: ${e.statusCode}',
+        );
       }
       _setError(e.toString());
     } finally {
@@ -92,13 +94,8 @@ class TransactionProvider with ChangeNotifier {
   }
 
   // Load transactions by customer name
-  Future<void> loadTransactionsByCustomerName({
-    String? customerName,
-  }) async {
-    await loadTransactions(
-      todayOnly: false,
-      customerName: customerName,
-    );
+  Future<void> loadTransactionsByCustomerName({String? customerName}) async {
+    await loadTransactions(todayOnly: false, customerName: customerName);
   }
 
   // Load all transactions without date filter
@@ -111,11 +108,15 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      print('TransactionProvider: Loading payment methods (usePublicEndpoint: $usePublicEndpoint)...');
-      _paymentMethods = await ApiService.getPaymentMethods(
-        usePublicEndpoint: usePublicEndpoint
+      print(
+        'TransactionProvider: Loading payment methods (usePublicEndpoint: $usePublicEndpoint)...',
       );
-      print('TransactionProvider: Loaded ${_paymentMethods.length} payment methods');
+      _paymentMethods = await ApiService.getPaymentMethods(
+        usePublicEndpoint: usePublicEndpoint,
+      );
+      print(
+        'TransactionProvider: Loaded ${_paymentMethods.length} payment methods',
+      );
       for (var method in _paymentMethods) {
         print('TransactionProvider: - ${method.name} (ID: ${method.id})');
       }
@@ -142,13 +143,18 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> payTransaction(int transactionId, String paymentMethodCode, {double? uangDiterima, double? kembalian}) async {
+  Future<bool> payTransaction(
+    int transactionId,
+    String paymentMethodCode, {
+    double? uangDiterima,
+    double? kembalian,
+  }) async {
     try {
       _setLoading(true);
       _setError(null);
 
       final updatedTransaction = await ApiService.payTransaction(
-        transactionId, 
+        transactionId,
         paymentMethodCode,
       );
 
@@ -178,7 +184,9 @@ class TransactionProvider with ChangeNotifier {
       );
 
       // Update local transaction data
-      final index = _transactions.indexWhere((t) => t.id == updatedTransaction.id);
+      final index = _transactions.indexWhere(
+        (t) => t.id == updatedTransaction.id,
+      );
       if (index >= 0) {
         _transactions[index] = txWithExtra;
       } else {
@@ -186,9 +194,13 @@ class TransactionProvider with ChangeNotifier {
       }
       // Print receipt after successful payment
       if (ThermalPrinterService.isConnected) {
-        print('TransactionProvider: Attempting to print receipt for transaction ${updatedTransaction.id}');
+        print(
+          'TransactionProvider: Attempting to print receipt for transaction ${updatedTransaction.id}',
+        );
         try {
-          final printSuccess = await ThermalPrinterService.printReceipt(txWithExtra);
+          final printSuccess = await ThermalPrinterService.printReceipt(
+            txWithExtra,
+          );
           if (printSuccess) {
             print('TransactionProvider: Receipt printed successfully');
           }
@@ -204,29 +216,38 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Add a new menu item to a pending transaction
-  Future<bool> addItemToTransaction(int transactionId, MenuItem menuItem, int quantity, List<CartAddOn>? addOns) async {
+  Future<bool> addItemToTransaction(
+    int transactionId,
+    MenuItem menuItem,
+    int quantity,
+    List<CartAddOn>? addOns,
+  ) async {
     try {
       _setLoading(true);
       _setError(null);
-      
+
       // Format data for API
       final itemData = {
         'menu_item_id': menuItem.id,
         'quantity': quantity,
-        'add_ons': (addOns ?? []).map((addOn) => {
-          'add_on_id': addOn.addOn.id,
-          'quantity': addOn.quantity,
-        }).toList(),
+        'add_ons': (addOns ?? [])
+            .map(
+              (addOn) => {
+                'add_on_id': addOn.addOn.id,
+                'quantity': addOn.quantity,
+              },
+            )
+            .toList(),
       };
-      
+
       // Add the item to the transaction
       await ApiService.addItemToTransaction(transactionId, itemData);
-      
+
       // Update local transaction data after item is added
       await loadTransactions();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to add item to transaction: ${e.toString()}');
@@ -235,27 +256,36 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Update an existing transaction item
-  Future<bool> updateTransactionItem(int transactionId, int itemId, int quantity, List<CartAddOn>? addOns) async {
+  Future<bool> updateTransactionItem(
+    int transactionId,
+    int itemId,
+    int quantity,
+    List<CartAddOn>? addOns,
+  ) async {
     try {
       _setLoading(true);
       _setError(null);
-      
+
       // Format data for API
       final updateData = {
         'quantity': quantity,
-        'add_ons': (addOns ?? []).map((addOn) => {
-          'add_on_id': addOn.addOn.id,
-          'quantity': addOn.quantity,
-        }).toList(),
+        'add_ons': (addOns ?? [])
+            .map(
+              (addOn) => {
+                'add_on_id': addOn.addOn.id,
+                'quantity': addOn.quantity,
+              },
+            )
+            .toList(),
       };
-      
+
       await ApiService.updateTransactionItem(transactionId, itemId, updateData);
-      
+
       // Update local transaction data after item is updated
       await loadTransactions();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to update transaction item: ${e.toString()}');
@@ -264,18 +294,18 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Delete a transaction item
   Future<bool> deleteTransactionItem(int transactionId, int itemId) async {
     try {
       _setLoading(true);
       _setError(null);
-      
+
       await ApiService.deleteTransactionItem(transactionId, itemId);
-      
+
       // Update local transaction data after item is deleted
       await loadTransactions();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to delete transaction item: ${e.toString()}');
@@ -284,23 +314,28 @@ class TransactionProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Update basic transaction information
-  Future<bool> updateTransaction(int id, {String? customerName, double? tax, double? discount}) async {
+  Future<bool> updateTransaction(
+    int id, {
+    String? customerName,
+    double? tax,
+    double? discount,
+  }) async {
     try {
       _setLoading(true);
       _setError(null);
-      
+
       final updateData = <String, dynamic>{};
       if (customerName != null) updateData['customer_name'] = customerName;
       if (tax != null) updateData['tax'] = tax;
       if (discount != null) updateData['discount'] = discount;
-      
+
       await ApiService.updateTransaction(id, updateData);
-      
+
       // Update local transaction data
       await loadTransactions();
-      
+
       return true;
     } catch (e) {
       _setError('Failed to update transaction: ${e.toString()}');
@@ -312,7 +347,9 @@ class TransactionProvider with ChangeNotifier {
 
   Future<bool> deleteTransaction(int id) async {
     try {
-      print('TransactionProvider: Starting delete operation for transaction $id');
+      print(
+        'TransactionProvider: Starting delete operation for transaction $id',
+      );
       _setLoading(true);
       _setError(null);
 
@@ -322,9 +359,11 @@ class TransactionProvider with ChangeNotifier {
       final initialCount = _transactions.length;
       _transactions.removeWhere((t) => t.id == id);
       final finalCount = _transactions.length;
-      
-      print('TransactionProvider: Deleted transaction $id. Count changed from $initialCount to $finalCount');
-      
+
+      print(
+        'TransactionProvider: Deleted transaction $id. Count changed from $initialCount to $finalCount',
+      );
+
       // Force notify listeners before setting loading to false
       notifyListeners();
 
@@ -335,9 +374,13 @@ class TransactionProvider with ChangeNotifier {
       return false;
     } finally {
       // Ensure loading is always set to false
-      print('TransactionProvider: Setting loading to false after delete operation');
+      print(
+        'TransactionProvider: Setting loading to false after delete operation',
+      );
       _setLoading(false);
-      print('TransactionProvider: Delete transaction operation completed, loading set to false');
+      print(
+        'TransactionProvider: Delete transaction operation completed, loading set to false',
+      );
     }
   }
 

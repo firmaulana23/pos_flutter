@@ -26,10 +26,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadDashboardData() async {
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-    await dashboardProvider.loadDashboardStats();
-    await dashboardProvider.loadSalesReport();
-    await dashboardProvider.loadTopSellingItems();
+    final dashboardProvider =
+        Provider.of<DashboardProvider>(context, listen: false);
+    await dashboardProvider.loadDashboardStats(selectedDate);
   }
 
   @override
@@ -68,9 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 24),
                   _buildStatsCards(dashboardProvider),
                   const SizedBox(height: 24),
-                  _buildSalesChart(dashboardProvider),
-                  const SizedBox(height: 24),
-                  _buildTopSellingItems(dashboardProvider),
+                  _buildSalesByPaymentMethod(dashboardProvider),
                 ],
               ),
             ),
@@ -96,7 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.primary.withAlpha(80),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -107,7 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.onPrimary.withValues(alpha: 0.2),
+              color: AppColors.onPrimary.withAlpha(50),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -124,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   'Dashboard',
                   style: TextStyle(
-                    color: AppColors.onPrimary.withValues(alpha: 0.8),
+                    color: AppColors.onPrimary.withAlpha(200),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -147,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -160,14 +157,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final date = await showDatePicker(
                     context: context,
                     initialDate: selectedDate,
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 365)),
                     lastDate: DateTime.now(),
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
-                          colorScheme: Theme.of(context).colorScheme.copyWith(
-                            primary: AppColors.primary,
-                          ),
+                          colorScheme:
+                              Theme.of(context).colorScheme.copyWith(
+                                    primary: AppColors.primary,
+                                  ),
                         ),
                         child: child!,
                       );
@@ -182,7 +181,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -212,7 +212,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatsCards(DashboardProvider dashboardProvider) {
-    final stats = dashboardProvider.dashboardStats;
+    final stats = dashboardProvider.dashboardData;
     if (stats == null) return const SizedBox.shrink();
 
     return Column(
@@ -237,7 +237,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               'Total Sales',
               AppFormatters.formatCurrency(stats.totalSales),
               Icons.attach_money,
-              Colors.green,
+              Colors.purple,
             ),
             _buildStatCard(
               'Total Orders',
@@ -246,16 +246,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Colors.blue,
             ),
             _buildStatCard(
-              'Total Customers',
-              stats.totalCustomers.toString(),
-              Icons.people,
+              'Pending Orders',
+              stats.pendingOrders.toString(),
+              Icons.hourglass_top,
               Colors.orange,
             ),
             _buildStatCard(
-              'Average Order',
-              AppFormatters.formatCurrency(stats.averageOrderValue),
-              Icons.trending_up,
-              Colors.purple,
+              'Paid Orders',
+              stats.paidOrders.toString(),
+              Icons.check_circle,
+              Colors.green,
             ),
           ],
         ),
@@ -263,7 +263,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return CustomCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -305,102 +306,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSalesChart(DashboardProvider dashboardProvider) {
-    final salesReport = dashboardProvider.salesReport;
-    if (salesReport == null || salesReport.isEmpty) {
-      return const CustomCard(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: EmptyStateWidget(
-            icon: Icons.bar_chart,
-            title: 'No Sales Data',
-            message: 'No sales data available for this date',
-          ),
-        ),
-      );
+  Widget _buildSalesByPaymentMethod(DashboardProvider dashboardProvider) {
+    final salesByPaymentMethod =
+        dashboardProvider.dashboardData?.salesByPaymentMethod;
+    if (salesByPaymentMethod == null || salesByPaymentMethod.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Sales Report',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          'Sales by Payment Method',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         CustomCard(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Hourly Sales',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      DateFormat('dd MMM yyyy').format(selectedDate),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: salesReport.length,
-                    itemBuilder: (context, index) {
-                      final report = salesReport[index];
-                      final maxSales = salesReport
-                          .map((r) => r.totalSales)
-                          .reduce((a, b) => a > b ? a : b);
-                      final height = (report.totalSales / maxSales) * 150;
-
-                      return Container(
-                        width: 60,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              AppFormatters.formatCurrency(report.totalSales),
-                              style: const TextStyle(fontSize: 10),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              height: height,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${report.hour}:00',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: salesByPaymentMethod.length,
+              separatorBuilder: (context, index) => const Divider(),
+              itemBuilder: (context, index) {
+                final item = salesByPaymentMethod[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: _getRankColor(index),
+                    child: const Icon(Icons.payment, color: Colors.white),
                   ),
-                ),
-              ],
+                  title: Text(
+                    item.paymentMethod,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  trailing: Text(
+                    AppFormatters.formatCurrency(item.totalSales),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -408,121 +357,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTopSellingItems(DashboardProvider dashboardProvider) {
-    final topItems = dashboardProvider.topSellingItems;
-    if (topItems == null || topItems.isEmpty) {
-      return const CustomCard(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: EmptyStateWidget(
-            icon: Icons.star,
-            title: 'No Top Items',
-            message: 'No top selling items data available',
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Top Selling Items',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        CustomCard(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Best Performers',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      DateFormat('dd MMM yyyy').format(selectedDate),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: topItems.length > 5 ? 5 : topItems.length,
-                  separatorBuilder: (context, index) => const Divider(),
-                  itemBuilder: (context, index) {
-                    final item = topItems[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: _getRankColor(index),
-                        child: Text(
-                          '${index + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        item.itemName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      subtitle: Text('${item.quantitySold} sold'),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            AppFormatters.formatCurrency(item.totalRevenue),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            'Revenue',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getRankColor(int index) {
-    switch (index) {
+  Color _getRankColor(int rank) {
+    switch (rank) {
       case 0:
-        return Colors.amber; // Gold
+        return Colors.amber.shade700;
       case 1:
-        return Colors.grey; // Silver
+        return Colors.grey.shade600;
       case 2:
-        return Colors.brown; // Bronze
+        return Colors.brown.shade400;
       default:
-        return Colors.blue;
+        return AppColors.primary.withOpacity(0.6);
     }
   }
 }

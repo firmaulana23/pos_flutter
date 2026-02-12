@@ -9,7 +9,7 @@ class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
   bool _isLoading = false;
   String? _error;
-  
+
   double _tax = 0.0;
 
   // Manual Discount
@@ -23,7 +23,6 @@ class CartProvider with ChangeNotifier {
   double _promoDiscount = 0.0;
   String? _validationError;
 
-
   List<CartItem> get items => _items;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -31,18 +30,26 @@ class CartProvider with ChangeNotifier {
   int get itemCount => _items.length;
   int get totalQuantity => _items.fold(0, (sum, item) => sum + item.quantity);
   double get subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
-  double get addOnsTotal => _items.fold(0, (sum, item) => sum + item.addOnsTotal);
+  double get addOnsTotal =>
+      _items.fold(0, (sum, item) => sum + item.addOnsTotal);
   double get discount => _manualDiscount;
   double get manualDiscountPercentage => _manualDiscountPercentage;
   double get tax => _tax;
-  
+
   Member? get member => _member;
   Promo? get promo => _promo;
   double get memberDiscount => _memberDiscount;
   double get promoDiscount => _promoDiscount;
   String? get validationError => _validationError;
-  
-  double get total => (subtotal + addOnsTotal + tax - _manualDiscount - _memberDiscount - _promoDiscount).clamp(0.0, double.infinity);
+
+  double get total =>
+      (subtotal +
+              addOnsTotal +
+              tax -
+              _manualDiscount -
+              _memberDiscount -
+              _promoDiscount)
+          .clamp(0.0, double.infinity);
 
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -53,7 +60,7 @@ class CartProvider with ChangeNotifier {
     _error = error;
     notifyListeners();
   }
-  
+
   void _setValidationError(String? error) {
     _validationError = error;
     notifyListeners();
@@ -61,19 +68,18 @@ class CartProvider with ChangeNotifier {
 
   void addItem(MenuItem menuItem, {List<CartAddOn>? addOns}) {
     // Check if item already exists (with same add-ons)
-    final existingIndex = _items.indexWhere((item) => 
-        item.menuItem.id == menuItem.id && 
-        _areAddOnsSame(item.addOns, addOns ?? []));
+    final existingIndex = _items.indexWhere(
+      (item) =>
+          item.menuItem.id == menuItem.id &&
+          _areAddOnsSame(item.addOns, addOns ?? []),
+    );
 
     if (existingIndex >= 0) {
       // Update quantity
       _items[existingIndex].quantity++;
     } else {
       // Add new item
-      _items.add(CartItem(
-        menuItem: menuItem,
-        addOns: addOns ?? [],
-      ));
+      _items.add(CartItem(menuItem: menuItem, addOns: addOns ?? []));
     }
     _recalculateDiscounts();
     notifyListeners();
@@ -101,9 +107,10 @@ class CartProvider with ChangeNotifier {
 
   void addAddOnToItem(int itemIndex, AddOn addOn) {
     if (itemIndex >= 0 && itemIndex < _items.length) {
-      final existingAddOnIndex = _items[itemIndex].addOns
-          .indexWhere((cartAddOn) => cartAddOn.addOn.id == addOn.id);
-      
+      final existingAddOnIndex = _items[itemIndex].addOns.indexWhere(
+        (cartAddOn) => cartAddOn.addOn.id == addOn.id,
+      );
+
       if (existingAddOnIndex >= 0) {
         // Increase quantity of existing add-on
         final currentAddOn = _items[itemIndex].addOns[existingAddOnIndex];
@@ -121,8 +128,10 @@ class CartProvider with ChangeNotifier {
   }
 
   void removeAddOnFromItem(int itemIndex, int addOnIndex) {
-    if (itemIndex >= 0 && itemIndex < _items.length &&
-        addOnIndex >= 0 && addOnIndex < _items[itemIndex].addOns.length) {
+    if (itemIndex >= 0 &&
+        itemIndex < _items.length &&
+        addOnIndex >= 0 &&
+        addOnIndex < _items[itemIndex].addOns.length) {
       _items[itemIndex].addOns.removeAt(addOnIndex);
       _recalculateDiscounts();
       notifyListeners();
@@ -165,7 +174,7 @@ class CartProvider with ChangeNotifier {
     } else {
       _memberDiscount = 0.0;
     }
-    
+
     // Recalculate Promo Discount
     if (_promo != null) {
       // If a member is applied and the promo is not stackable, don't apply promo discount
@@ -175,7 +184,8 @@ class CartProvider with ChangeNotifier {
         if (_promo!.type.toLowerCase() == 'percentage') {
           // Apply percentage discount on the subtotal
           _promoDiscount = currentSubtotal * (_promo!.value / 100);
-        } else { // 'fixed'
+        } else {
+          // 'fixed'
           _promoDiscount = _promo!.value;
         }
       }
@@ -232,7 +242,7 @@ class CartProvider with ChangeNotifier {
         _setValidationError('Promo cannot be combined with a member discount.');
         // We still set the promo but the discount will be 0
       }
-      
+
       _promo = promo;
       _recalculateDiscounts();
       notifyListeners();
@@ -256,11 +266,13 @@ class CartProvider with ChangeNotifier {
 
   bool _areAddOnsSame(List<CartAddOn> addOns1, List<CartAddOn> addOns2) {
     if (addOns1.length != addOns2.length) return false;
-    
+
     for (final addOn1 in addOns1) {
-      final match = addOns2.any((addOn2) => 
-          addOn1.addOn.id == addOn2.addOn.id && 
-          addOn1.quantity == addOn2.quantity);
+      final match = addOns2.any(
+        (addOn2) =>
+            addOn1.addOn.id == addOn2.addOn.id &&
+            addOn1.quantity == addOn2.quantity,
+      );
       if (!match) return false;
     }
     return true;
@@ -278,15 +290,24 @@ class CartProvider with ChangeNotifier {
         'member_id': _member?.id,
         'promo_id': _promo?.id,
         'tax': tax,
-        'discount': _manualDiscountPercentage, // Send fixed manual discount amount
-        'items': _items.map((item) => {
-          'menu_item_id': item.menuItem.id,
-          'quantity': item.quantity,
-          'add_ons': item.addOns.map((addOn) => {
-            'add_on_id': addOn.addOn.id,
-            'quantity': addOn.quantity,
-          }).toList(),
-        }).toList(),
+        'discount':
+            _manualDiscountPercentage, // Send fixed manual discount amount
+        'items': _items
+            .map(
+              (item) => {
+                'menu_item_id': item.menuItem.id,
+                'quantity': item.quantity,
+                'add_ons': item.addOns
+                    .map(
+                      (addOn) => {
+                        'add_on_id': addOn.addOn.id,
+                        'quantity': addOn.quantity,
+                      },
+                    )
+                    .toList(),
+              },
+            )
+            .toList(),
       };
 
       final transaction = await ApiService.createTransaction(transactionData);
@@ -300,7 +321,10 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  Future<Transaction?> processPayment(String paymentMethodCode, {required String customerName}) async {
+  Future<Transaction?> processPayment(
+    String paymentMethodCode, {
+    required String customerName,
+  }) async {
     if (_items.isEmpty) return null;
 
     try {
@@ -316,7 +340,7 @@ class CartProvider with ChangeNotifier {
         transaction.id!,
         paymentMethodCode,
       );
-      
+
       return paidTransaction;
     } catch (e) {
       _setError(e.toString());

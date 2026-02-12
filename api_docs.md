@@ -272,8 +272,8 @@ GET /api/v1/public/payment-methods
         },
         {
             "id": 2,
-            "name": "Credit Card",
-            "code": "card",
+            "name": "Qris",
+            "code": "qris",
             "is_active": true
         },
         {
@@ -287,6 +287,7 @@ GET /api/v1/public/payment-methods
 ```
 
 ## User Management
+
 
 ### Get Profile
 ```http
@@ -2029,6 +2030,50 @@ Authorization: Bearer <token>
 
 ## Dashboard Analytics
 
+### Get Dashboard Data
+```http
+GET /api/v1/dashboard/data?start_date=2024-01-01&end_date=2024-01-31
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `start_date` (string, optional): Filter data from this start date (YYYY-MM-DD)
+- `end_date` (string, optional): Filter data up to this end date (YYYY-MM-DD)
+
+If no dates are provided, the API returns all-time statistics.
+
+**Response:**
+```json
+{
+    "total_sales": 1500000,
+    "total_orders": 120,
+    "pending_orders": 5,
+    "paid_orders": 115,
+    "sales_chart": [
+        {
+            "date": "2024-01-31",
+            "amount": 100000,
+            "orders": 10
+        },
+        {
+            "date": "2024-01-30",
+            "amount": 80000,
+            "orders": 8
+        }
+    ],
+    "sales_by_payment_method": [
+        {
+            "payment_method": "cash",
+            "total_sales": 1000000
+        },
+        {
+            "payment_method": "qris",
+            "total_sales": 500000
+        }
+    ]
+}
+```
+
 **Access Requirements:** Admin or Manager role required for all dashboard endpoints.
 
 ### Get Dashboard Stats
@@ -2153,8 +2198,8 @@ GET /api/v1/payment-methods
         },
         {
             "id": 2,
-            "name": "Credit Card",
-            "code": "card",
+            "name": "Qris",
+            "code": "qris",
             "is_active": true
         },
         {

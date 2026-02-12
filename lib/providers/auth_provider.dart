@@ -30,7 +30,7 @@ class AuthProvider with ChangeNotifier {
 
       final response = await ApiService.login(email, password);
       print('Login response: $response'); // Debug output
-      
+
       // Check if the response has a 'user' field or if the user data is at the root level
       try {
         if (response['user'] != null) {
@@ -53,7 +53,7 @@ class AuthProvider with ChangeNotifier {
           updatedAt: DateTime.now(),
         );
       }
-      
+
       notifyListeners();
       return true;
     } catch (e) {

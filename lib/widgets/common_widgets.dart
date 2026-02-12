@@ -5,11 +5,7 @@ class LoadingWidget extends StatelessWidget {
   final String? message;
   final double size;
 
-  const LoadingWidget({
-    super.key,
-    this.message,
-    this.size = 50,
-  });
+  const LoadingWidget({super.key, this.message, this.size = 50});
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +25,9 @@ class LoadingWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.primary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.primary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -61,17 +57,13 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: AppColors.error,
-            ),
+            Icon(icon, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.error,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.error),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
@@ -115,33 +107,26 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: AppColors.disabled,
-            ),
+            Icon(icon, size: 80, color: AppColors.disabled),
             const SizedBox(height: 16),
             Text(
               title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppColors.disabled,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppColors.disabled),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               message ?? subtitle,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.disabled,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.disabled),
               textAlign: TextAlign.center,
             ),
             if (onAction != null && actionText != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionText!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionText!)),
             ],
           ],
         ),
@@ -263,11 +248,7 @@ class IconTextButton extends StatelessWidget {
       child: Column(
         mainAxisSize: mainAxisSize,
         children: [
-          Icon(
-            icon,
-            size: iconSize,
-            color: color ?? AppColors.primary,
-          ),
+          Icon(icon, size: iconSize, color: color ?? AppColors.primary),
           const SizedBox(height: 4),
           Text(
             text,
@@ -303,7 +284,9 @@ class PriceTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color?.withValues(alpha: 0.1) ?? AppColors.primary.withValues(alpha: 0.1),
+        color:
+            color?.withValues(alpha: 0.1) ??
+            AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -356,9 +339,9 @@ class QuantitySelector extends StatelessWidget {
           ),
           child: Text(
             quantity.toString(),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         IconButton(
@@ -452,13 +435,9 @@ class _EnhancedButtonState extends State<EnhancedButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -507,20 +486,18 @@ class _EnhancedButtonState extends State<EnhancedButton>
                   ),
                 )
               : (widget.icon != null
-                  ? Icon(widget.icon, size: 18)
-                  : const SizedBox.shrink()),
+                    ? Icon(widget.icon, size: 18)
+                    : const SizedBox.shrink()),
           label: Text(
             widget.text,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: widget.backgroundColor ?? AppColors.primary,
             foregroundColor: widget.foregroundColor ?? AppColors.onPrimary,
             elevation: 0,
-            padding: widget.padding ??
+            padding:
+                widget.padding ??
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -560,13 +537,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    _animation = Tween<double>(
-      begin: -1.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override

@@ -27,11 +27,13 @@ class TransactionItem {
       menuItemId: json['menu_item_id'],
       quantity: json['quantity'],
       price: (json['unit_price'] as num).toDouble(), // API uses 'unit_price'
-      addOns: (json['add_ons'] as List?)
-          ?.map((addOn) => TransactionAddOn.fromJson(addOn))
-          .toList() ?? [],
-      menuItem: json['menu_item'] != null 
-          ? MenuItem.fromJson(json['menu_item']) 
+      addOns:
+          (json['add_ons'] as List?)
+              ?.map((addOn) => TransactionAddOn.fromJson(addOn))
+              .toList() ??
+          [],
+      menuItem: json['menu_item'] != null
+          ? MenuItem.fromJson(json['menu_item'])
           : null,
     );
   }
@@ -48,7 +50,8 @@ class TransactionItem {
   }
 
   double get subtotal => price * quantity;
-  double get addOnsTotal => (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
+  double get addOnsTotal =>
+      (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
   double get total => subtotal + addOnsTotal;
 }
 
@@ -76,9 +79,7 @@ class TransactionAddOn {
       addOnId: json['add_on_id'],
       quantity: json['quantity'],
       price: (json['unit_price'] as num).toDouble(), // API uses 'unit_price'
-      addOn: json['add_on'] != null 
-          ? AddOn.fromJson(json['add_on']) 
-          : null,
+      addOn: json['add_on'] != null ? AddOn.fromJson(json['add_on']) : null,
     );
   }
 
@@ -185,20 +186,20 @@ class Transaction {
       total: (json['total'] as num).toDouble(),
       paymentMethod: json['payment_method'], // String from API
       userId: json['user_id'],
-      customerName: json['customer_name'] ?? '', // Default to empty string if not provided
+      customerName:
+          json['customer_name'] ??
+          '', // Default to empty string if not provided
       createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
           : null,
-      paidAt: json['paid_at'] != null 
-          ? DateTime.parse(json['paid_at']) 
-          : null,
-      items: (json['items'] as List?)
-          ?.map((item) => TransactionItem.fromJson(item))
-          .toList() ?? [],
-      user: json['user'] != null 
-          ? User.fromJson(json['user']) 
-          : null,
+      paidAt: json['paid_at'] != null ? DateTime.parse(json['paid_at']) : null,
+      items:
+          (json['items'] as List?)
+              ?.map((item) => TransactionItem.fromJson(item))
+              .toList() ??
+          [],
+      user: json['user'] != null ? User.fromJson(json['user']) : null,
       extra: json['extra'] as Map<String, dynamic>?,
     );
   }
@@ -221,7 +222,8 @@ class Transaction {
   bool get isPending => status == 'pending';
   bool get isPaid => status == 'paid';
   double get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
-  double get addOnsTotal => items.fold(0, (sum, item) => sum + item.addOnsTotal);
+  double get addOnsTotal =>
+      items.fold(0, (sum, item) => sum + item.addOnsTotal);
   int get totalQuantity => items.fold(0, (sum, item) => sum + item.quantity);
 }
 
@@ -231,20 +233,15 @@ class CartItem {
   int quantity;
   final List<CartAddOn> addOns;
 
-  CartItem({
-    required this.menuItem,
-    this.quantity = 1,
-    List<CartAddOn>? addOns,
-  }) : addOns = addOns ?? [];
+  CartItem({required this.menuItem, this.quantity = 1, List<CartAddOn>? addOns})
+    : addOns = addOns ?? [];
 
   double get subtotal => menuItem.price * quantity;
-  double get addOnsTotal => (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
+  double get addOnsTotal =>
+      (addOns.fold(0.0, (sum, addOn) => sum + addOn.totalPrice) * quantity);
   double get total => subtotal + addOnsTotal;
 
-  CartItem copyWith({
-    int? quantity,
-    List<CartAddOn>? addOns,
-  }) {
+  CartItem copyWith({int? quantity, List<CartAddOn>? addOns}) {
     return CartItem(
       menuItem: menuItem,
       quantity: quantity ?? this.quantity,
@@ -257,10 +254,7 @@ class CartAddOn {
   final AddOn addOn;
   final int quantity;
 
-  CartAddOn({
-    required this.addOn,
-    this.quantity = 1,
-  });
+  CartAddOn({required this.addOn, this.quantity = 1});
 
   double get totalPrice => addOn.price * quantity;
 }

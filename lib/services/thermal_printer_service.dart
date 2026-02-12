@@ -14,8 +14,10 @@ class ThermalPrinterService {
   static String? _connectedDeviceAddress;
 
   // Common service UUIDs for thermal printers
-  static const String _thermalPrinterServiceUuid = "000018f0-0000-1000-8000-00805f9b34fb";
-  static const String _thermalPrinterCharacteristicUuid = "00002af1-0000-1000-8000-00805f9b34fb";
+  static const String _thermalPrinterServiceUuid =
+      "000018f0-0000-1000-8000-00805f9b34fb";
+  static const String _thermalPrinterCharacteristicUuid =
+      "00002af1-0000-1000-8000-00805f9b34fb";
 
   static const _storage = FlutterSecureStorage();
   static const _printerKey = 'bluetooth_printer_id';
@@ -29,37 +31,38 @@ class ThermalPrinterService {
         debugPrint("Bluetooth permissions not granted");
         return [];
       }
-      
+
       // Check if Bluetooth is supported
       if (await FlutterBluePlus.isSupported == false) {
         debugPrint("Bluetooth not supported by this device");
         return [];
       }
-      
+
       // Check if Bluetooth is enabled
-      if (await FlutterBluePlus.adapterState.first != BluetoothAdapterState.on) {
+      if (await FlutterBluePlus.adapterState.first !=
+          BluetoothAdapterState.on) {
         debugPrint("Bluetooth is not enabled");
         return [];
       }
-      
+
       List<ScanResult> results = [];
-      
+
       // Listen to scan results
       FlutterBluePlus.scanResults.listen((scanResults) {
         results = scanResults;
         debugPrint('Found ${scanResults.length} Bluetooth devices');
       });
-      
+
       // Start scanning
       debugPrint('Starting Bluetooth scan...');
       await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
-      
+
       // Wait a bit for results to come in
       await Future.delayed(const Duration(seconds: 5));
-      
+
       // Stop scanning
       await FlutterBluePlus.stopScan();
-      
+
       return results;
     } catch (e) {
       debugPrint('Error getting Bluetooth devices: $e');
@@ -102,28 +105,30 @@ class ThermalPrinterService {
       // Find the device by its ID
       List<ScanResult> scanResults = await getAvailableDevices();
       BluetoothDevice? targetDevice;
-      
+
       for (ScanResult result in scanResults) {
-        if (result.device.platformName == deviceId || result.device.remoteId.toString() == deviceId) {
+        if (result.device.platformName == deviceId ||
+            result.device.remoteId.toString() == deviceId) {
           targetDevice = result.device;
           break;
         }
       }
-      
+
       if (targetDevice == null) {
         debugPrint('Device not found: $deviceId');
         return false;
       }
-      
+
       // Connect to the device
       await targetDevice.connect();
-      
+
       // Discover services
       List<BluetoothService> services = await targetDevice.discoverServices();
-      
+
       // Find the write characteristic
       for (BluetoothService service in services) {
-        for (BluetoothCharacteristic characteristic in service.characteristics) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
           if (characteristic.properties.write) {
             _writeCharacteristic = characteristic;
             break;
@@ -131,16 +136,19 @@ class ThermalPrinterService {
         }
         if (_writeCharacteristic != null) break;
       }
-      
+
       if (_writeCharacteristic != null) {
         _connectedDevice = targetDevice;
         _isConnected = true;
         _connectedDeviceAddress = deviceId;
-        await _storage.write(key: _printerKey, value: deviceId); // Save printer config
+        await _storage.write(
+          key: _printerKey,
+          value: deviceId,
+        ); // Save printer config
         debugPrint('Connected to printer: $deviceId');
         return true;
       }
-      
+
       return false;
     } catch (e) {
       debugPrint('Error connecting to printer: $e');
@@ -178,21 +186,28 @@ class ThermalPrinterService {
   // Helper method to write data in chunks to avoid BLE data size limits
   static Future<bool> _writeDataInChunks(Uint8List data) async {
     try {
-      const int maxChunkSize = 400; // Conservative chunk size for better compatibility
-      
-      debugPrint('Writing ${data.length} bytes in chunks of $maxChunkSize bytes');
-      
+      const int maxChunkSize =
+          400; // Conservative chunk size for better compatibility
+
+      debugPrint(
+        'Writing ${data.length} bytes in chunks of $maxChunkSize bytes',
+      );
+
       for (int i = 0; i < data.length; i += maxChunkSize) {
-        int end = (i + maxChunkSize < data.length) ? i + maxChunkSize : data.length;
+        int end = (i + maxChunkSize < data.length)
+            ? i + maxChunkSize
+            : data.length;
         Uint8List chunk = data.sublist(i, end);
-        
-        debugPrint('Writing chunk ${(i ~/ maxChunkSize) + 1}: ${chunk.length} bytes');
+
+        debugPrint(
+          'Writing chunk ${(i ~/ maxChunkSize) + 1}: ${chunk.length} bytes',
+        );
         await _writeCharacteristic!.write(chunk, withoutResponse: true);
-        
+
         // Delay between chunks to ensure proper transmission
         await Future.delayed(const Duration(milliseconds: 100));
       }
-      
+
       debugPrint('All chunks written successfully');
       return true;
     } catch (e) {
@@ -224,15 +239,21 @@ class ThermalPrinterService {
       ];
 
       debugPrint('Sending cash drawer open command...');
-      
+
       // Try primary command first
-      await _writeCharacteristic!.write(Uint8List.fromList(openDrawerCommand), withoutResponse: true);
+      await _writeCharacteristic!.write(
+        Uint8List.fromList(openDrawerCommand),
+        withoutResponse: true,
+      );
       await Future.delayed(const Duration(milliseconds: 200));
-      
+
       // Try alternative command for better compatibility
-      await _writeCharacteristic!.write(Uint8List.fromList(alternativeCommand), withoutResponse: true);
+      await _writeCharacteristic!.write(
+        Uint8List.fromList(alternativeCommand),
+        withoutResponse: true,
+      );
       await Future.delayed(const Duration(milliseconds: 200));
-      
+
       debugPrint('Cash drawer open command sent successfully');
       return true;
     } catch (e) {
@@ -242,7 +263,10 @@ class ThermalPrinterService {
   }
 
   // Print receipt for a transaction
-  static Future<bool> printReceipt(Transaction transaction, {bool openDrawer = true}) async {
+  static Future<bool> printReceipt(
+    Transaction transaction, {
+    bool openDrawer = true,
+  }) async {
     try {
       if (!_isConnected || _writeCharacteristic == null) {
         debugPrint('Printer not connected');
@@ -250,23 +274,28 @@ class ThermalPrinterService {
       }
 
       // Generate receipt content
-      Uint8List receiptData = await _generateReceipt(transaction, openDrawer: openDrawer);
-      
+      Uint8List receiptData = await _generateReceipt(
+        transaction,
+        openDrawer: openDrawer,
+      );
+
       debugPrint('Receipt data size: ${receiptData.length} bytes');
-      
+
       // Print the receipt by writing data in chunks
       bool success = await _writeDataInChunks(receiptData);
-      
+
       if (success) {
         debugPrint('Receipt printed successfully');
-        
+
         // Open cash drawer after successful receipt printing if requested
         if (openDrawer) {
           debugPrint('Opening cash drawer after receipt printing...');
-          await Future.delayed(const Duration(milliseconds: 500)); // Wait for receipt to finish
+          await Future.delayed(
+            const Duration(milliseconds: 500),
+          ); // Wait for receipt to finish
           await openCashDrawer();
         }
-        
+
         return true;
       } else {
         debugPrint('Failed to print receipt');
@@ -279,7 +308,10 @@ class ThermalPrinterService {
   }
 
   // Generate receipt content using ESC/POS commands
-  static Future<Uint8List> _generateReceipt(Transaction transaction, {bool openDrawer = true}) async {
+  static Future<Uint8List> _generateReceipt(
+    Transaction transaction, {
+    bool openDrawer = true,
+  }) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm58, profile);
     List<int> bytes = [];
@@ -294,19 +326,19 @@ class ThermalPrinterService {
         bold: true,
       ),
     );
-    
+
     bytes += generator.text(
       'Jl. Permana Utara No. 122',
       styles: const PosStyles(align: PosAlign.center),
     );
-    
+
     bytes += generator.text(
       'Tel: 085258179632',
       styles: const PosStyles(align: PosAlign.center),
     );
-    
+
     bytes += generator.hr();
-    
+
     // Transaction info
     bytes += generator.row([
       PosColumn(
@@ -315,12 +347,14 @@ class ThermalPrinterService {
         styles: const PosStyles(bold: true),
       ),
       PosColumn(
-        text: transaction.transactionNo ?? AppFormatters.formatTransactionId(transaction.id!),
+        text:
+            transaction.transactionNo ??
+            AppFormatters.formatTransactionId(transaction.id!),
         width: 6,
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]);
-    
+
     bytes += generator.row([
       PosColumn(
         text: 'Pelanggan:',
@@ -333,7 +367,7 @@ class ThermalPrinterService {
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]);
-    
+
     bytes += generator.row([
       PosColumn(
         text: 'Tanggal:',
@@ -346,8 +380,9 @@ class ThermalPrinterService {
         styles: const PosStyles(align: PosAlign.right),
       ),
     ]);
-    
-    if (transaction.paymentMethod != null && transaction.paymentMethod!.isNotEmpty) {
+
+    if (transaction.paymentMethod != null &&
+        transaction.paymentMethod!.isNotEmpty) {
       bytes += generator.row([
         PosColumn(
           text: 'Pembayaran:',
@@ -361,20 +396,17 @@ class ThermalPrinterService {
         ),
       ]);
     }
-    
+
     bytes += generator.hr();
-    
+
     // Items header
     bytes += generator.text(
       'ITEM PESANAN',
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-      ),
+      styles: const PosStyles(align: PosAlign.center, bold: true),
     );
-    
+
     bytes += generator.hr(ch: '=');
-    
+
     // Items
     for (var item in transaction.items) {
       // Item name and quantity
@@ -390,20 +422,17 @@ class ThermalPrinterService {
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]);
-      
+
       // Item price and subtotal
       bytes += generator.row([
-        PosColumn(
-          text: AppFormatters.formatCurrency(item.price),
-          width: 8,
-        ),
+        PosColumn(text: AppFormatters.formatCurrency(item.price), width: 8),
         PosColumn(
           text: AppFormatters.formatCurrency(item.subtotal),
           width: 4,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]);
-      
+
       // Add-ons if any
       for (var addOn in item.addOns) {
         bytes += generator.row([
@@ -418,12 +447,12 @@ class ThermalPrinterService {
           ),
         ]);
       }
-      
+
       bytes += generator.emptyLines(1);
     }
-    
+
     bytes += generator.hr(ch: '=');
-    
+
     // Totals
     bytes += generator.row([
       PosColumn(
@@ -437,7 +466,7 @@ class ThermalPrinterService {
         styles: const PosStyles(align: PosAlign.right, bold: true),
       ),
     ]);
-    
+
     if (transaction.tax > 0) {
       bytes += generator.row([
         PosColumn(
@@ -452,7 +481,7 @@ class ThermalPrinterService {
         ),
       ]);
     }
-    
+
     if (transaction.discount > 0) {
       bytes += generator.row([
         PosColumn(
@@ -467,7 +496,7 @@ class ThermalPrinterService {
         ),
       ]);
     }
-    
+
     // Uang Diterima & Kembalian
     if (transaction.extra != null && transaction.extra is Map) {
       final extra = transaction.extra as Map;
@@ -500,9 +529,9 @@ class ThermalPrinterService {
         ]);
       }
     }
-    
+
     bytes += generator.hr();
-    
+
     bytes += generator.row([
       PosColumn(
         text: 'TOTAL:',
@@ -524,22 +553,22 @@ class ThermalPrinterService {
         ),
       ),
     ]);
-    
+
     bytes += generator.hr();
-    
+
     // Footer
     bytes += generator.text(
       'Terima kasih atas kunjungannya',
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
-    
+
     bytes += generator.text(
       'Selamat menikmati',
       styles: const PosStyles(align: PosAlign.center),
     );
-    
+
     bytes += generator.emptyLines(1);
-    
+
     bytes += generator.text(
       'wifi: ZONA12_COFFEE',
       styles: const PosStyles(align: PosAlign.center),
@@ -548,17 +577,17 @@ class ThermalPrinterService {
       'pass: zona12kopi',
       styles: const PosStyles(align: PosAlign.center),
     );
-    
+
     // Cut paper
     bytes += generator.cut();
-    
+
     // Add cash drawer open command at the end if requested
     if (openDrawer) {
       // ESC/POS command to open cash drawer embedded in receipt
       bytes += [0x1B, 0x70, 0x00, 0x19, 0x19]; // ESC p 0 25 25
       bytes += [0x1B, 0x70, 0x01, 0x19, 0x19]; // ESC p 1 25 25 (alternative)
     }
-    
+
     return Uint8List.fromList(bytes);
   }
 
@@ -597,27 +626,27 @@ class ThermalPrinterService {
           bold: true,
         ),
       );
-      
+
       bytes += generator.text(
         'Printer berhasil terhubung!',
         styles: const PosStyles(align: PosAlign.center),
       );
-      
+
       bytes += generator.text(
         DateTime.now().toString(),
         styles: const PosStyles(align: PosAlign.center),
       );
-      
+
       if (testDrawer) {
         bytes += generator.text(
           'Testing cash drawer...',
           styles: const PosStyles(align: PosAlign.center),
         );
       }
-      
+
       bytes += generator.emptyLines(2);
       bytes += generator.cut();
-      
+
       // Add cash drawer command if testing drawer
       if (testDrawer) {
         bytes += [0x1B, 0x70, 0x00, 0x19, 0x19]; // ESC p 0 25 25
@@ -625,9 +654,9 @@ class ThermalPrinterService {
       }
 
       debugPrint('Test print data size: ${bytes.length} bytes');
-      
+
       bool success = await _writeDataInChunks(Uint8List.fromList(bytes));
-      
+
       if (success) {
         debugPrint('Test print successful');
         if (testDrawer) {

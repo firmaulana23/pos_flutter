@@ -130,7 +130,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _startDate != null ? AppColors.primary : AppColors.inputBorder,
+                            color: _startDate != null
+                                ? AppColors.primary
+                                : AppColors.inputBorder,
                             width: _startDate != null ? 1.5 : 1,
                           ),
                         ),
@@ -144,9 +146,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               builder: (context, child) {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                      primary: AppColors.primary,
-                                    ),
+                                    colorScheme: Theme.of(context).colorScheme
+                                        .copyWith(primary: AppColors.primary),
                                   ),
                                   child: child!,
                                 );
@@ -166,31 +167,40 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               children: [
                                 Icon(
                                   Icons.calendar_today_rounded,
-                                  color: _startDate != null ? AppColors.primary : AppColors.disabled,
+                                  color: _startDate != null
+                                      ? AppColors.primary
+                                      : AppColors.disabled,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Dari Tanggal',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.onSurface.withValues(alpha: 0.6),
+                                          color: AppColors.onSurface.withValues(
+                                            alpha: 0.6,
+                                          ),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         _startDate != null
-                                            ? AppFormatters.formatDate(_startDate!)
+                                            ? AppFormatters.formatDate(
+                                                _startDate!,
+                                              )
                                             : 'Pilih tanggal mulai',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
-                                          color: _startDate != null ? AppColors.onSurface : AppColors.disabled,
+                                          color: _startDate != null
+                                              ? AppColors.onSurface
+                                              : AppColors.disabled,
                                         ),
                                       ),
                                     ],
@@ -208,7 +218,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _endDate != null ? AppColors.primary : AppColors.inputBorder,
+                            color: _endDate != null
+                                ? AppColors.primary
+                                : AppColors.inputBorder,
                             width: _endDate != null ? 1.5 : 1,
                           ),
                         ),
@@ -222,9 +234,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               builder: (context, child) {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                                      primary: AppColors.primary,
-                                    ),
+                                    colorScheme: Theme.of(context).colorScheme
+                                        .copyWith(primary: AppColors.primary),
                                   ),
                                   child: child!,
                                 );
@@ -244,31 +255,40 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               children: [
                                 Icon(
                                   Icons.calendar_today_rounded,
-                                  color: _endDate != null ? AppColors.primary : AppColors.disabled,
+                                  color: _endDate != null
+                                      ? AppColors.primary
+                                      : AppColors.disabled,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Sampai Tanggal',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.onSurface.withValues(alpha: 0.6),
+                                          color: AppColors.onSurface.withValues(
+                                            alpha: 0.6,
+                                          ),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         _endDate != null
-                                            ? AppFormatters.formatDate(_endDate!)
+                                            ? AppFormatters.formatDate(
+                                                _endDate!,
+                                              )
                                             : 'Pilih tanggal akhir',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
-                                          color: _endDate != null ? AppColors.onSurface : AppColors.disabled,
+                                          color: _endDate != null
+                                              ? AppColors.onSurface
+                                              : AppColors.disabled,
                                         ),
                                       ),
                                     ],
@@ -296,10 +316,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    EnhancedButton(
-                      text: 'Search',
-                      onPressed: _applyDateFilter,
-                    ),
+                    EnhancedButton(text: 'Search', onPressed: _applyDateFilter),
                   ],
                 ),
                 if (_startDate != null || _endDate != null) ...[
@@ -401,7 +418,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   controller: _tabController,
                   children: [
                     _buildTransactionList(transactionProvider.transactions),
-                    _buildTransactionList(transactionProvider.pendingTransactions),
+                    _buildTransactionList(
+                      transactionProvider.pendingTransactions,
+                    ),
                     _buildTransactionList(transactionProvider.paidTransactions),
                   ],
                 );
@@ -439,9 +458,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   Widget _buildTransactionCard(Transaction transaction) {
     final isPending = transaction.status == 'pending';
     final authProvider = Provider.of<AuthProvider>(context);
-    final bool isAdminOrManager = authProvider.currentUser != null && 
-                                 (authProvider.currentUser!.isAdmin || 
-                                  authProvider.currentUser!.isManager);
+    final bool isAdminOrManager =
+        authProvider.currentUser != null &&
+        (authProvider.currentUser!.isAdmin ||
+            authProvider.currentUser!.isManager);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -458,7 +478,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           Container(
             decoration: BoxDecoration(
               color: isPending ? Colors.orange.shade50 : Colors.green.shade50,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -478,16 +500,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       const SizedBox(height: 4),
                       Text(
                         AppFormatters.formatDateTime(transaction.createdAt),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isPending ? Colors.orange : Colors.green,
                     borderRadius: BorderRadius.circular(20),
@@ -511,20 +533,23 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.person_outline,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Customer: ${transaction.customerName.isNotEmpty ? transaction.customerName : "N/A"}',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(color: Colors.grey[700]),
                     ),
                     const Spacer(),
                     // Only show edit button for pending transactions
                     if (isPending)
                       IconButton(
                         icon: const Icon(Icons.edit, size: 16),
-                        onPressed: () => _showEditCustomerNameDialog(transaction),
+                        onPressed: () =>
+                            _showEditCustomerNameDialog(transaction),
                         tooltip: 'Edit Customer Name',
                         constraints: const BoxConstraints(),
                         padding: EdgeInsets.zero,
@@ -551,15 +576,20 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               children: [
                                 Text(
                                   '${item.quantity}x ${item.menuItem?.name ?? 'Unknown Item'}',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                                 if (item.addOns.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: item.addOns.map((addon) {
                                       return Padding(
-                                        padding: const EdgeInsets.only(left: 16),
+                                        padding: const EdgeInsets.only(
+                                          left: 16,
+                                        ),
                                         child: Text(
                                           '+ ${addon.quantity}x ${addon.addOn?.name ?? 'Unknown Add-on'}',
                                           style: TextStyle(
@@ -582,7 +612,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           if (isPending)
                             IconButton(
                               icon: const Icon(Icons.edit, size: 18),
-                              onPressed: () => _showEditItemDialog(transaction, item),
+                              onPressed: () =>
+                                  _showEditItemDialog(transaction, item),
                               tooltip: 'Edit Item',
                               constraints: const BoxConstraints(),
                               padding: const EdgeInsets.only(left: 8),
@@ -651,14 +682,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   ],
                 ),
                 // Payment method display
-                if (transaction.paymentMethod != null && transaction.paymentMethod!.isNotEmpty) ...[
+                if (transaction.paymentMethod != null &&
+                    transaction.paymentMethod!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Payment Method'),
                       Text(
-                        _getPaymentMethodDisplayName(transaction.paymentMethod!),
+                        _getPaymentMethodDisplayName(
+                          transaction.paymentMethod!,
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ],
@@ -670,7 +704,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           Container(
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(12),
+              ),
             ),
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -679,7 +715,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 // Allow deletes only for:
                 // 1. Pending transactions (by any user)
                 // 2. Paid transactions (only by admin/manager)
-                if (isPending || isAdminOrManager) 
+                if (isPending || isAdminOrManager)
                   OutlinedButton.icon(
                     onPressed: () => _showDeleteConfirmation(transaction),
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -704,12 +740,20 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 if (transaction.isPaid)
                   ElevatedButton.icon(
                     onPressed: () async {
-                      final success = await ThermalPrinterService.printReceipt(transaction);
+                      final success = await ThermalPrinterService.printReceipt(
+                        transaction,
+                      );
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(success ? 'Struk berhasil dicetak' : 'Gagal mencetak struk'),
-                            backgroundColor: success ? Colors.green : Colors.red,
+                            content: Text(
+                              success
+                                  ? 'Struk berhasil dicetak'
+                                  : 'Gagal mencetak struk',
+                            ),
+                            backgroundColor: success
+                                ? Colors.green
+                                : Colors.red,
                           ),
                         );
                       }
@@ -734,13 +778,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     // Load menu items
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     await menuProvider.loadMenuItems(usePublicEndpoint: true);
-    
+
     if (!mounted) return;
 
     MenuItem? selectedMenuItem;
     int quantity = 1;
     final List<CartAddOn> selectedAddOns = [];
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -759,26 +803,36 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       ),
                       value: selectedMenuItem,
                       items: menuProvider.menuItems
-                          .where((item) => item.isAvailable) // Only available items
+                          .where(
+                            (item) => item.isAvailable,
+                          ) // Only available items
                           .map((item) {
-                        return DropdownMenuItem<MenuItem>(
-                          value: item,
-                          child: Text('${item.name} (${AppFormatters.formatCurrency(item.price)})'),
-                        );
-                      }).toList(),
+                            return DropdownMenuItem<MenuItem>(
+                              value: item,
+                              child: Text(
+                                '${item.name} (${AppFormatters.formatCurrency(item.price)})',
+                              ),
+                            );
+                          })
+                          .toList(),
                       onChanged: (MenuItem? value) async {
                         if (value != null) {
                           setState(() {
                             selectedMenuItem = value;
-                            selectedAddOns.clear(); // Reset add-ons when item changes
+                            selectedAddOns
+                                .clear(); // Reset add-ons when item changes
                           });
-                          
+
                           // Load add-ons for this menu item
                           if (selectedMenuItem != null) {
-                            await menuProvider.loadMenuItemAddOns(selectedMenuItem!.id);
-                            
+                            await menuProvider.loadMenuItemAddOns(
+                              selectedMenuItem!.id,
+                            );
+
                             if (!context.mounted) return;
-                            setState(() {}); // Refresh to update available add-ons
+                            setState(
+                              () {},
+                            ); // Refresh to update available add-ons
                           }
                         }
                       },
@@ -811,62 +865,93 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       ...menuProvider.menuItemAddOns
                           .where((addOn) => addOn.isAvailable)
                           .map((addOn) {
-                        final isSelected = selectedAddOns.any((a) => a.addOn.id == addOn.id);
-                        final selectedAddOn = isSelected 
-                            ? selectedAddOns.firstWhere((a) => a.addOn.id == addOn.id) 
-                            : null;
-                        
-                        return CheckboxListTile(
-                          title: Text(addOn.name),
-                          subtitle: Text(AppFormatters.formatCurrency(addOn.price)),
-                          value: isSelected,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              if (value == true) {
-                                selectedAddOns.add(CartAddOn(addOn: addOn));
-                              } else {
-                                selectedAddOns.removeWhere((a) => a.addOn.id == addOn.id);
-                              }
-                            });
-                          },
-                          secondary: isSelected
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.remove, size: 16),
-                                      onPressed: () {
-                                        setState(() {
-                                          final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
-                                          if (index != -1 && selectedAddOns[index].quantity > 1) {
-                                            selectedAddOns[index] = CartAddOn(
-                                              addOn: addOn,
-                                              quantity: selectedAddOns[index].quantity - 1,
-                                            );
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    Text('${selectedAddOn?.quantity ?? 1}'),
-                                    IconButton(
-                                      icon: const Icon(Icons.add, size: 16),
-                                      onPressed: () {
-                                        setState(() {
-                                          final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
-                                          if (index != -1) {
-                                            selectedAddOns[index] = CartAddOn(
-                                              addOn: addOn,
-                                              quantity: selectedAddOns[index].quantity + 1,
-                                            );
-                                          }
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                )
-                              : null,
-                        );
-                      }).toList(),
+                            final isSelected = selectedAddOns.any(
+                              (a) => a.addOn.id == addOn.id,
+                            );
+                            final selectedAddOn = isSelected
+                                ? selectedAddOns.firstWhere(
+                                    (a) => a.addOn.id == addOn.id,
+                                  )
+                                : null;
+
+                            return CheckboxListTile(
+                              title: Text(addOn.name),
+                              subtitle: Text(
+                                AppFormatters.formatCurrency(addOn.price),
+                              ),
+                              value: isSelected,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    selectedAddOns.add(CartAddOn(addOn: addOn));
+                                  } else {
+                                    selectedAddOns.removeWhere(
+                                      (a) => a.addOn.id == addOn.id,
+                                    );
+                                  }
+                                });
+                              },
+                              secondary: isSelected
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.remove,
+                                            size: 16,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              final index = selectedAddOns
+                                                  .indexWhere(
+                                                    (a) =>
+                                                        a.addOn.id == addOn.id,
+                                                  );
+                                              if (index != -1 &&
+                                                  selectedAddOns[index]
+                                                          .quantity >
+                                                      1) {
+                                                selectedAddOns[index] =
+                                                    CartAddOn(
+                                                      addOn: addOn,
+                                                      quantity:
+                                                          selectedAddOns[index]
+                                                              .quantity -
+                                                          1,
+                                                    );
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        Text('${selectedAddOn?.quantity ?? 1}'),
+                                        IconButton(
+                                          icon: const Icon(Icons.add, size: 16),
+                                          onPressed: () {
+                                            setState(() {
+                                              final index = selectedAddOns
+                                                  .indexWhere(
+                                                    (a) =>
+                                                        a.addOn.id == addOn.id,
+                                                  );
+                                              if (index != -1) {
+                                                selectedAddOns[index] =
+                                                    CartAddOn(
+                                                      addOn: addOn,
+                                                      quantity:
+                                                          selectedAddOns[index]
+                                                              .quantity +
+                                                          1,
+                                                    );
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  : null,
+                            );
+                          })
+                          .toList(),
                     ],
                   ],
                 ),
@@ -881,25 +966,35 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       ? null
                       : () async {
                           Navigator.pop(context);
-                          final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-                          
-                          final success = await transactionProvider.addItemToTransaction(
-                            transaction.id!,
-                            selectedMenuItem!,
-                            quantity,
-                            selectedAddOns,
-                          );
-                          
+                          final transactionProvider =
+                              Provider.of<TransactionProvider>(
+                                context,
+                                listen: false,
+                              );
+
+                          final success = await transactionProvider
+                              .addItemToTransaction(
+                                transaction.id!,
+                                selectedMenuItem!,
+                                quantity,
+                                selectedAddOns,
+                              );
+
                           if (!mounted) return;
-                          
+
                           if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Item added successfully')),
+                              const SnackBar(
+                                content: Text('Item added successfully'),
+                              ),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(transactionProvider.error ?? 'Failed to add item'),
+                                content: Text(
+                                  transactionProvider.error ??
+                                      'Failed to add item',
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -916,26 +1011,28 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   // Dialog to edit an existing transaction item
-  void _showEditItemDialog(Transaction transaction, TransactionItem item) async {
+  void _showEditItemDialog(
+    Transaction transaction,
+    TransactionItem item,
+  ) async {
     // Load menu items and add-ons
     final menuProvider = Provider.of<MenuProvider>(context, listen: false);
     await menuProvider.loadMenuItemAddOns(item.menuItemId);
-    
+
     if (!mounted) return;
 
     int quantity = item.quantity;
     final List<CartAddOn> selectedAddOns = [];
-    
+
     // Convert existing add-ons to CartAddOn format
     for (final addon in item.addOns) {
       if (addon.addOn != null) {
-        selectedAddOns.add(CartAddOn(
-          addOn: addon.addOn!,
-          quantity: addon.quantity,
-        ));
+        selectedAddOns.add(
+          CartAddOn(addOn: addon.addOn!, quantity: addon.quantity),
+        );
       }
     }
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -979,62 +1076,88 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ...menuProvider.menuItemAddOns
                         .where((addOn) => addOn.isAvailable)
                         .map((addOn) {
-                      final isSelected = selectedAddOns.any((a) => a.addOn.id == addOn.id);
-                      final selectedAddOn = isSelected 
-                          ? selectedAddOns.firstWhere((a) => a.addOn.id == addOn.id) 
-                          : null;
-                      
-                      return CheckboxListTile(
-                        title: Text(addOn.name),
-                        subtitle: Text(AppFormatters.formatCurrency(addOn.price)),
-                        value: isSelected,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              selectedAddOns.add(CartAddOn(addOn: addOn));
-                            } else {
-                              selectedAddOns.removeWhere((a) => a.addOn.id == addOn.id);
-                            }
-                          });
-                        },
-                        secondary: isSelected
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove, size: 16),
-                                    onPressed: () {
-                                      setState(() {
-                                        final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
-                                        if (index != -1 && selectedAddOns[index].quantity > 1) {
-                                          selectedAddOns[index] = CartAddOn(
-                                            addOn: addOn,
-                                            quantity: selectedAddOns[index].quantity - 1,
-                                          );
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  Text('${selectedAddOn?.quantity ?? 1}'),
-                                  IconButton(
-                                    icon: const Icon(Icons.add, size: 16),
-                                    onPressed: () {
-                                      setState(() {
-                                        final index = selectedAddOns.indexWhere((a) => a.addOn.id == addOn.id);
-                                        if (index != -1) {
-                                          selectedAddOns[index] = CartAddOn(
-                                            addOn: addOn,
-                                            quantity: selectedAddOns[index].quantity + 1,
-                                          );
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ],
-                              )
-                            : null,
-                      );
-                    }).toList(),
+                          final isSelected = selectedAddOns.any(
+                            (a) => a.addOn.id == addOn.id,
+                          );
+                          final selectedAddOn = isSelected
+                              ? selectedAddOns.firstWhere(
+                                  (a) => a.addOn.id == addOn.id,
+                                )
+                              : null;
+
+                          return CheckboxListTile(
+                            title: Text(addOn.name),
+                            subtitle: Text(
+                              AppFormatters.formatCurrency(addOn.price),
+                            ),
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedAddOns.add(CartAddOn(addOn: addOn));
+                                } else {
+                                  selectedAddOns.removeWhere(
+                                    (a) => a.addOn.id == addOn.id,
+                                  );
+                                }
+                              });
+                            },
+                            secondary: isSelected
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.remove,
+                                          size: 16,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            final index = selectedAddOns
+                                                .indexWhere(
+                                                  (a) => a.addOn.id == addOn.id,
+                                                );
+                                            if (index != -1 &&
+                                                selectedAddOns[index].quantity >
+                                                    1) {
+                                              selectedAddOns[index] = CartAddOn(
+                                                addOn: addOn,
+                                                quantity:
+                                                    selectedAddOns[index]
+                                                        .quantity -
+                                                    1,
+                                              );
+                                            }
+                                          });
+                                        },
+                                      ),
+                                      Text('${selectedAddOn?.quantity ?? 1}'),
+                                      IconButton(
+                                        icon: const Icon(Icons.add, size: 16),
+                                        onPressed: () {
+                                          setState(() {
+                                            final index = selectedAddOns
+                                                .indexWhere(
+                                                  (a) => a.addOn.id == addOn.id,
+                                                );
+                                            if (index != -1) {
+                                              selectedAddOns[index] = CartAddOn(
+                                                addOn: addOn,
+                                                quantity:
+                                                    selectedAddOns[index]
+                                                        .quantity +
+                                                    1,
+                                              );
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  )
+                                : null,
+                          );
+                        })
+                        .toList(),
                   ],
                 ),
               ),
@@ -1046,25 +1169,35 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(context);
-                    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-                    
-                    final success = await transactionProvider.updateTransactionItem(
-                      transaction.id!,
-                      item.id!,
-                      quantity,
-                      selectedAddOns,
-                    );
-                    
+                    final transactionProvider =
+                        Provider.of<TransactionProvider>(
+                          context,
+                          listen: false,
+                        );
+
+                    final success = await transactionProvider
+                        .updateTransactionItem(
+                          transaction.id!,
+                          item.id!,
+                          quantity,
+                          selectedAddOns,
+                        );
+
                     if (!mounted) return;
-                    
+
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Item updated successfully')),
+                        const SnackBar(
+                          content: Text('Item updated successfully'),
+                        ),
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(transactionProvider.error ?? 'Failed to update item'),
+                          content: Text(
+                            transactionProvider.error ??
+                                'Failed to update item',
+                          ),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -1084,10 +1217,11 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   void _showDeleteConfirmation(Transaction transaction) {
     final isPending = transaction.status == 'pending';
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final bool isAdminOrManager = authProvider.currentUser != null && 
-                                  (authProvider.currentUser!.isAdmin || 
-                                   authProvider.currentUser!.isManager);
-    
+    final bool isAdminOrManager =
+        authProvider.currentUser != null &&
+        (authProvider.currentUser!.isAdmin ||
+            authProvider.currentUser!.isManager);
+
     // Check permission: only admins/managers can delete paid transactions
     if (!isPending && !isAdminOrManager) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1098,7 +1232,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       );
       return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1106,7 +1240,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         content: Text(
           'Are you sure you want to delete this transaction?\n'
           'Transaction No: ${transaction.transactionNo ?? 'N/A'}\n'
-          'This action cannot be undone.'
+          'This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -1116,20 +1250,27 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-              
+              final transactionProvider = Provider.of<TransactionProvider>(
+                context,
+                listen: false,
+              );
+
               try {
                 await transactionProvider.deleteTransaction(transaction.id!);
-                
+
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Transaction deleted successfully')),
+                  const SnackBar(
+                    content: Text('Transaction deleted successfully'),
+                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Failed to delete transaction: ${e.toString()}'),
+                    content: Text(
+                      'Failed to delete transaction: ${e.toString()}',
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -1142,14 +1283,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       ),
     );
   }
-  
+
   // Process payment for a pending transaction
   void _showPaymentDialog(Transaction transaction) {
-    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-    String selectedPaymentMethod = transactionProvider.paymentMethods.isNotEmpty 
-        ? transactionProvider.paymentMethods.first.code 
+    final transactionProvider = Provider.of<TransactionProvider>(
+      context,
+      listen: false,
+    );
+    String selectedPaymentMethod = transactionProvider.paymentMethods.isNotEmpty
+        ? transactionProvider.paymentMethods.first.code
         : '';
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1169,7 +1313,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               const Text('Select Payment Method:'),
               const SizedBox(height: 8),
               if (transactionProvider.paymentMethods.isEmpty)
-                const Text('Loading payment methods...', style: TextStyle(fontStyle: FontStyle.italic))
+                const Text(
+                  'Loading payment methods...',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                )
               else
                 StatefulBuilder(
                   builder: (context, setState) {
@@ -1181,11 +1328,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       items: transactionProvider.paymentMethods
                           .where((pm) => pm.isActive)
                           .map((pm) {
-                        return DropdownMenuItem<String>(
-                          value: pm.code,
-                          child: Text(pm.name),
-                        );
-                      }).toList(),
+                            return DropdownMenuItem<String>(
+                              value: pm.code,
+                              child: Text(pm.name),
+                            );
+                          })
+                          .toList(),
                       onChanged: (value) {
                         setState(() {
                           selectedPaymentMethod = value ?? '';
@@ -1202,33 +1350,44 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: selectedPaymentMethod.isEmpty 
-                  ? null 
+              onPressed: selectedPaymentMethod.isEmpty
+                  ? null
                   : () async {
                       Navigator.pop(context);
                       double uangDiterima = 0.0;
                       double kembalian = 0.0;
                       if (selectedPaymentMethod.toLowerCase() == 'cash') {
-                        uangDiterima = await showDialog<double>(
+                        uangDiterima =
+                            await showDialog<double>(
                               context: context,
                               builder: (context) {
-                                final TextEditingController controller = TextEditingController();
+                                final TextEditingController controller =
+                                    TextEditingController();
                                 double change = 0.0;
                                 return StatefulBuilder(
                                   builder: (context, setState) {
                                     double total = transaction.total;
-                                    double received = double.tryParse(controller.text) ?? 0.0;
-                                    change = (received - total).clamp(0.0, double.infinity);
+                                    double received =
+                                        double.tryParse(controller.text) ?? 0.0;
+                                    change = (received - total).clamp(
+                                      0.0,
+                                      double.infinity,
+                                    );
                                     return AlertDialog(
                                       title: const Text('Pembayaran'),
                                       content: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               const Text('Total'),
-                                              Text(AppFormatters.formatCurrency(total)),
+                                              Text(
+                                                AppFormatters.formatCurrency(
+                                                  total,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                           const SizedBox(height: 12),
@@ -1244,22 +1403,39 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                                           ),
                                           const SizedBox(height: 12),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               const Text('Kembalian'),
-                                              Text(AppFormatters.formatCurrency(change)),
+                                              Text(
+                                                AppFormatters.formatCurrency(
+                                                  change,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ],
                                       ),
                                       actions: [
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context),
+                                          onPressed: () =>
+                                              Navigator.pop(context),
                                           child: const Text('Batal'),
                                         ),
                                         ElevatedButton(
-                                          onPressed: (double.tryParse(controller.text) ?? 0.0) >= total
-                                              ? () => Navigator.pop(context, double.tryParse(controller.text) ?? 0.0)
+                                          onPressed:
+                                              (double.tryParse(
+                                                        controller.text,
+                                                      ) ??
+                                                      0.0) >=
+                                                  total
+                                              ? () => Navigator.pop(
+                                                  context,
+                                                  double.tryParse(
+                                                        controller.text,
+                                                      ) ??
+                                                      0.0,
+                                                )
                                               : null,
                                           child: const Text('Bayar'),
                                         ),
@@ -1268,8 +1444,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                                   },
                                 );
                               },
-                            ) ?? 0.0;
-                        kembalian = (uangDiterima - transaction.total).clamp(0.0, double.infinity);
+                            ) ??
+                            0.0;
+                        kembalian = (uangDiterima - transaction.total).clamp(
+                          0.0,
+                          double.infinity,
+                        );
                         if (uangDiterima < transaction.total) return;
                       } else {
                         uangDiterima = transaction.total;
@@ -1281,17 +1461,22 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         uangDiterima: uangDiterima,
                         kembalian: kembalian,
                       );
-                      
-                      if (!context.mounted) return; 
-                      
+
+                      if (!context.mounted) return;
+
                       if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Payment processed successfully')),
+                          const SnackBar(
+                            content: Text('Payment processed successfully'),
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(transactionProvider.error ?? 'Failed to process payment'),
+                            content: Text(
+                              transactionProvider.error ??
+                                  'Failed to process payment',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -1311,8 +1496,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // Show dialog to edit customer name for a pending transaction
   void _showEditCustomerNameDialog(Transaction transaction) {
-    final TextEditingController _customerNameController = TextEditingController(text: transaction.customerName);
-    
+    final TextEditingController _customerNameController = TextEditingController(
+      text: transaction.customerName,
+    );
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1347,25 +1534,33 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                
-                final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+
+                final transactionProvider = Provider.of<TransactionProvider>(
+                  context,
+                  listen: false,
+                );
                 final newName = _customerNameController.text.trim();
-                
+
                 final success = await transactionProvider.updateTransaction(
                   transaction.id!,
                   customerName: newName,
                 );
-                
+
                 if (!context.mounted) return;
-                
+
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Customer name updated successfully')),
+                    const SnackBar(
+                      content: Text('Customer name updated successfully'),
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(transactionProvider.error ?? 'Failed to update customer name'),
+                      content: Text(
+                        transactionProvider.error ??
+                            'Failed to update customer name',
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1381,8 +1576,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // Dialog to edit discount and tax for a transaction
   void _showEditDiscountTaxDialog(Transaction transaction) {
-    final TextEditingController _discountController = TextEditingController(text: transaction.discount.toStringAsFixed(0));
-    final TextEditingController _taxController = TextEditingController(text: transaction.tax.toStringAsFixed(0));
+    final TextEditingController _discountController = TextEditingController(
+      text: transaction.discount.toStringAsFixed(0),
+    );
+    final TextEditingController _taxController = TextEditingController(
+      text: transaction.tax.toStringAsFixed(0),
+    );
     showDialog(
       context: context, // Use the local context
       builder: (context) {
@@ -1417,9 +1616,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
             ElevatedButton(
               onPressed: () async {
-                final discount = double.tryParse(_discountController.text) ?? 0.0;
+                final discount =
+                    double.tryParse(_discountController.text) ?? 0.0;
                 final tax = double.tryParse(_taxController.text) ?? 0.0;
-                final provider = Provider.of<TransactionProvider>(context, listen: false);
+                final provider = Provider.of<TransactionProvider>(
+                  context,
+                  listen: false,
+                );
                 await provider.updateTransaction(
                   transaction.id!,
                   discount: discount,

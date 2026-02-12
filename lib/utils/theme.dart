@@ -59,7 +59,7 @@ class AppTheme {
         secondary: AppColors.secondary,
         error: AppColors.error,
       ),
-      
+
       // App Bar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
@@ -78,9 +78,7 @@ class AppTheme {
         color: AppColors.cardBackground,
         elevation: 2,
         shadowColor: AppColors.cardShadow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Elevated Button Theme
@@ -90,13 +88,8 @@ class AppTheme {
           foregroundColor: AppColors.onPrimary,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -106,13 +99,8 @@ class AppTheme {
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -121,10 +109,7 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -152,7 +137,10 @@ class AppTheme {
         ),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
 
       // Bottom Navigation Bar Theme
@@ -251,10 +239,7 @@ class AppTheme {
       ),
 
       // Icon Theme
-      iconTheme: const IconThemeData(
-        color: AppColors.onBackground,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.onBackground, size: 24),
 
       // Divider Theme
       dividerTheme: const DividerThemeData(
@@ -278,19 +263,14 @@ class AppTheme {
         selectedColor: AppColors.primary,
         secondarySelectedColor: AppColors.secondary,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        labelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         secondaryLabelStyle: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.onPrimary,
         ),
         brightness: Brightness.light,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

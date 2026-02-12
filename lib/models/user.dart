@@ -17,7 +17,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     print('Parsing User from JSON: $json'); // Debug output
-    
+
     // Handle different date field formats
     DateTime parseDate(dynamic dateValue) {
       if (dateValue == null) return DateTime.now();
@@ -31,9 +31,11 @@ class User {
       }
       return DateTime.now();
     }
-    
+
     return User(
-      id: (json['id'] ?? 0) is int ? json['id'] ?? 0 : int.tryParse(json['id'].toString()) ?? 0,
+      id: (json['id'] ?? 0) is int
+          ? json['id'] ?? 0
+          : int.tryParse(json['id'].toString()) ?? 0,
       email: json['email']?.toString() ?? json['username']?.toString() ?? '',
       name: json['name']?.toString() ?? json['username']?.toString() ?? 'User',
       role: json['role']?.toString() ?? 'cashier',

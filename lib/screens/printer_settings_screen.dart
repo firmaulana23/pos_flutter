@@ -64,19 +64,23 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
 
     try {
       BluetoothDevice device = deviceResult.device;
-      String deviceId = device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString();
+      String deviceId = device.platformName.isNotEmpty
+          ? device.platformName
+          : device.remoteId.toString();
       bool success = await ThermalPrinterService.connectToPrinter(deviceId);
-      
+
       if (success) {
         setState(() {
           _isConnected = true;
           _connectedDeviceAddress = deviceId;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Connected to ${device.platformName.isNotEmpty ? device.platformName : 'Unknown Device'}'),
+              content: Text(
+                'Connected to ${device.platformName.isNotEmpty ? device.platformName : 'Unknown Device'}',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -85,7 +89,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to connect to ${device.platformName.isNotEmpty ? device.platformName : 'Unknown Device'}'),
+              content: Text(
+                'Failed to connect to ${device.platformName.isNotEmpty ? device.platformName : 'Unknown Device'}',
+              ),
               backgroundColor: AppColors.error,
             ),
           );
@@ -118,7 +124,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         _isConnected = false;
         _connectedDeviceAddress = null;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -150,11 +156,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
 
     try {
       bool success = await ThermalPrinterService.testPrint();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Test print successful!' : 'Test print failed'),
+            content: Text(
+              success ? 'Test print successful!' : 'Test print failed',
+            ),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),
         );
@@ -182,11 +190,15 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
 
     try {
       bool success = await ThermalPrinterService.testCashDrawer();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Cash drawer opened successfully!' : 'Failed to open cash drawer'),
+            content: Text(
+              success
+                  ? 'Cash drawer opened successfully!'
+                  : 'Failed to open cash drawer',
+            ),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),
         );
@@ -214,11 +226,15 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
 
     try {
       bool success = await ThermalPrinterService.testPrint(testDrawer: true);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Test print with cash drawer successful!' : 'Test print with cash drawer failed'),
+            content: Text(
+              success
+                  ? 'Test print with cash drawer successful!'
+                  : 'Test print with cash drawer failed',
+            ),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),
         );
@@ -265,9 +281,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       children: [
                         Text(
                           'Connection Status',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -276,7 +291,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: _isConnected ? AppColors.success : AppColors.error,
+                                color: _isConnected
+                                    ? AppColors.success
+                                    : AppColors.error,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -284,13 +301,16 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                             Text(
                               _isConnected ? 'Connected' : 'Disconnected',
                               style: TextStyle(
-                                color: _isConnected ? AppColors.success : AppColors.error,
+                                color: _isConnected
+                                    ? AppColors.success
+                                    : AppColors.error,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
-                        if (_isConnected && _connectedDeviceAddress != null) ...[
+                        if (_isConnected &&
+                            _connectedDeviceAddress != null) ...[
                           const SizedBox(height: 8),
                           Text(
                             'Device: $_connectedDeviceAddress',
@@ -355,9 +375,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Available Devices
                   Text(
                     'Available Bluetooth Devices',
@@ -366,30 +386,35 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   if (_availableDevices.isEmpty)
                     const CustomCard(
                       child: EmptyStateWidget(
                         title: 'No devices found',
-                        subtitle: 'Make sure your Bluetooth printer is turned on and discoverable',
+                        subtitle:
+                            'Make sure your Bluetooth printer is turned on and discoverable',
                         icon: Icons.bluetooth_disabled,
                       ),
                     )
                   else
                     ..._availableDevices.map((deviceResult) {
                       BluetoothDevice device = deviceResult.device;
-                      String deviceId = device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString();
+                      String deviceId = device.platformName.isNotEmpty
+                          ? device.platformName
+                          : device.remoteId.toString();
                       return CustomCard(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: Icon(
                             Icons.print,
-                            color: _connectedDeviceAddress == deviceId 
-                                ? AppColors.success 
+                            color: _connectedDeviceAddress == deviceId
+                                ? AppColors.success
                                 : AppColors.disabled,
                           ),
                           title: Text(
-                            device.platformName.isNotEmpty ? device.platformName : 'Unknown Device',
+                            device.platformName.isNotEmpty
+                                ? device.platformName
+                                : 'Unknown Device',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(device.remoteId.toString()),
@@ -399,7 +424,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                                   color: AppColors.success,
                                 )
                               : ElevatedButton(
-                                  onPressed: () => _connectToDevice(deviceResult),
+                                  onPressed: () =>
+                                      _connectToDevice(deviceResult),
                                   child: const Text('Connect'),
                                 ),
                         ),

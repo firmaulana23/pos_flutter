@@ -14,9 +14,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppBarWithActions(
-        title: 'Profil',
-      ),
+      appBar: const AppBarWithActions(title: 'Profil'),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           final user = authProvider.user;
@@ -30,14 +28,14 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 // Profile Header
                 _buildProfileHeader(context, user),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Profile Info
                 _buildProfileInfo(context, user),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Actions
                 _buildActions(context, authProvider),
               ],
@@ -64,27 +62,27 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Text(
             user.name,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 4),
-          
+
           Text(
             user.email,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onSurface.withValues(alpha: 0.7),
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           StatusChip(
             text: user.role.toUpperCase(),
             color: _getRoleColor(user.role),
@@ -101,27 +99,27 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Text(
             'Informasi Akun',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildInfoItem(
             context,
             'Role',
             _getRoleDisplayName(user.role),
             Icons.badge_outlined,
           ),
-          
+
           _buildInfoItem(
             context,
             'Bergabung',
             AppFormatters.formatDate(user.createdAt),
             Icons.calendar_today_outlined,
           ),
-          
+
           _buildInfoItem(
             context,
             'Terakhir diperbarui',
@@ -133,16 +131,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoItem(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildInfoItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: AppColors.primary,
-          ),
+          Icon(icon, size: 20, color: AppColors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -156,9 +155,9 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -183,9 +182,9 @@ class ProfileScreen extends StatelessWidget {
                   // TODO: Navigate to settings
                 },
               ),
-              
+
               const Divider(height: 1),
-              
+
               ListTile(
                 leading: const Icon(Icons.help_outline),
                 title: const Text('Bantuan'),
@@ -194,9 +193,9 @@ class ProfileScreen extends StatelessWidget {
                   // TODO: Navigate to help
                 },
               ),
-              
+
               const Divider(height: 1),
-              
+
               ListTile(
                 leading: const Icon(Icons.print_outlined),
                 title: const Text('Pengaturan Printer'),
@@ -210,9 +209,9 @@ class ProfileScreen extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const Divider(height: 1),
-              
+
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('Tentang Aplikasi'),
@@ -224,18 +223,22 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         ElevatedButton.icon(
-          onPressed: authProvider.isLoading ? null : () => _logout(context, authProvider),
-          icon: authProvider.isLoading 
+          onPressed: authProvider.isLoading
+              ? null
+              : () => _logout(context, authProvider),
+          icon: authProvider.isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.onPrimary,
+                    ),
                   ),
                 )
               : const Icon(Icons.logout),
@@ -279,9 +282,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Keluar'),
           ),
         ],
@@ -290,7 +291,7 @@ class ProfileScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       await authProvider.logout();
-      
+
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),

@@ -3,15 +3,11 @@ import '../models/dashboard.dart';
 import '../services/api_service.dart';
 
 class DashboardProvider with ChangeNotifier {
-  DashboardStats? _dashboardStats;
-  SalesReport? _salesReport;
-  List<TopSellingItem> _topSellingItems = [];
+  DashboardData? _dashboardData;
   bool _isLoading = false;
   String? _error;
 
-  DashboardStats? get dashboardStats => _dashboardStats;
-  SalesReport? get salesReport => _salesReport;
-  List<TopSellingItem> get topSellingItems => _topSellingItems;
+  DashboardData? get dashboardData => _dashboardData;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -25,69 +21,12 @@ class DashboardProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadDashboardStats() async {
+  Future<void> loadDashboardStats(DateTime date) async {
     try {
       _setLoading(true);
       _setError(null);
 
-      _dashboardStats = await ApiService.getDashboardStats();
-      notifyListeners();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> loadSalesReport({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      _salesReport = await ApiService.getSalesReport(
-        startDate: startDate,
-        endDate: endDate,
-      );
-      notifyListeners();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> loadTopSellingItems() async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      _topSellingItems = await ApiService.getProfitAnalysis();
-      notifyListeners();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> loadAllDashboardData() async {
-    try {
-      _setLoading(true);
-      _setError(null);
-
-      final futures = await Future.wait([
-        ApiService.getDashboardStats(),
-        ApiService.getSalesReport(),
-        ApiService.getProfitAnalysis(),
-      ]);
-
-      _dashboardStats = futures[0] as DashboardStats;
-      _salesReport = futures[1] as SalesReport;
-      _topSellingItems = futures[2] as List<TopSellingItem>;
-
+      _dashboardData = await ApiService.getDashboardData(date);
       notifyListeners();
     } catch (e) {
       _setError(e.toString());

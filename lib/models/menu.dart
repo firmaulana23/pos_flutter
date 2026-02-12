@@ -89,8 +89,8 @@ class MenuItem {
       isAvailable: json['is_available'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      category: json['category'] != null 
-          ? Category.fromJson(json['category']) 
+      category: json['category'] != null
+          ? Category.fromJson(json['category'])
           : null,
     );
   }
@@ -148,7 +148,8 @@ class MenuItem {
 
 class AddOn {
   final int id;
-  final int? menuItemId;  // null for global add-ons, specific ID for menu-specific add-ons
+  final int?
+  menuItemId; // null for global add-ons, specific ID for menu-specific add-ons
   final String name;
   final String? description;
   final double price;
@@ -179,7 +180,9 @@ class AddOn {
       description: json['description'],
       price: (json['price'] as num).toDouble(),
       cogs: json['cogs'] != null ? (json['cogs'] as num).toDouble() : null,
-      margin: json['margin'] != null ? (json['margin'] as num).toDouble() : null,
+      margin: json['margin'] != null
+          ? (json['margin'] as num).toDouble()
+          : null,
       isAvailable: json['is_available'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

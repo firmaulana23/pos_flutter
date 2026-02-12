@@ -5,7 +5,7 @@ import '../utils/theme.dart';
 import '../utils/permissions.dart';
 import 'pos_screen.dart';
 import 'transactions_screen.dart';
-import 'menu_management_screen.dart';
+// import 'menu_management_screen.dart';
 import 'dashboard_screen.dart';
 import 'profile_screen.dart';
 
@@ -26,9 +26,7 @@ class _MainScreenState extends State<MainScreen> {
         final user = authProvider.user;
         if (user == null) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -46,10 +44,7 @@ class _MainScreenState extends State<MainScreen> {
         }
 
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: screens,
-          ),
+          body: IndexedStack(index: _currentIndex, children: screens),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -67,7 +62,10 @@ class _MainScreenState extends State<MainScreen> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: List.generate(
@@ -89,30 +87,21 @@ class _MainScreenState extends State<MainScreen> {
 
   List<Widget> _getScreens(String role) {
     final List<Widget> screens = [
+      const DashboardScreen(),
       const POSScreen(),
       const TransactionsScreen(),
-      const MenuManagementScreen(),
       const ProfileScreen(),
     ];
-
-    // Menu management for roles with permission
-    // if (Permissions.canManageMenu(role)) {
-    //   screens.add(const MenuManagementScreen());
-    // }
-
-    // Dashboard for roles with permission
-    // if (Permissions.canViewDashboard(role)) {
-    //   screens.add(const DashboardScreen());
-    // }
-
-    // Profile for all users
-    // screens.add(const ProfileScreen());
 
     return screens;
   }
 
   List<BottomNavigationBarItem> _getNavigationItems(String role) {
     final List<BottomNavigationBarItem> items = [
+      const BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
       const BottomNavigationBarItem(
         icon: Icon(Icons.point_of_sale),
         label: 'POS',
@@ -121,50 +110,15 @@ class _MainScreenState extends State<MainScreen> {
         icon: Icon(Icons.receipt_long),
         label: 'Transaksi',
       ),
-      const BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant_menu),
-          label: 'Menu',
-        ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.person),
-        label: 'Profil',
-      ),
+      const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
     ];
-
-    // Menu management for roles with permission
-    // if (Permissions.canManageMenu(role)) {
-    //   items.add(
-    //     const BottomNavigationBarItem(
-    //       icon: Icon(Icons.restaurant_menu),
-    //       label: 'Menu',
-    //     ),
-    //   );
-    // }
-
-    // Dashboard for roles with permission  
-    // if (Permissions.canViewDashboard(role)) {
-    //   items.add(
-    //     const BottomNavigationBarItem(
-    //       icon: Icon(Icons.dashboard),
-    //       label: 'Dashboard',
-    //     ),
-    //   );
-    // }
-
-    // Profile for all users
-    // items.add(
-    //   const BottomNavigationBarItem(
-    //     icon: Icon(Icons.person),
-    //     label: 'Profil',
-    //   ),
-    // );
 
     return items;
   }
 
   Widget _buildNavItem(int index, Icon icon, String label) {
     final isSelected = _currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
