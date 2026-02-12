@@ -659,7 +659,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Discount'),
+                      Text(
+                          'Discount${transaction.discountPercentage != null && transaction.discountPercentage! > 0 ? ' (${transaction.discountPercentage?.toStringAsFixed(0)}%)' : ''}'),
                       Text(
                         '- ${AppFormatters.formatCurrency(transaction.discount)}',
                         style: const TextStyle(color: Colors.red),
@@ -1574,69 +1575,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
-  // Dialog to edit discount and tax for a transaction
-  void _showEditDiscountTaxDialog(Transaction transaction) {
-    final TextEditingController _discountController = TextEditingController(
-      text: transaction.discount.toStringAsFixed(0),
-    );
-    final TextEditingController _taxController = TextEditingController(
-      text: transaction.tax.toStringAsFixed(0),
-    );
-    showDialog(
-      context: context, // Use the local context
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Discount & Tax'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _discountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Discount (Rp)',
-                  prefixText: 'Rp ',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _taxController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Tax (Rp)',
-                  prefixText: 'Rp ',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final discount =
-                    double.tryParse(_discountController.text) ?? 0.0;
-                final tax = double.tryParse(_taxController.text) ?? 0.0;
-                final provider = Provider.of<TransactionProvider>(
-                  context,
-                  listen: false,
-                );
-                await provider.updateTransaction(
-                  transaction.id!,
-                  discount: discount,
-                  tax: tax,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   String _getPaymentMethodDisplayName(String code) {
     // You can customize this method to return the display name based on the payment method code

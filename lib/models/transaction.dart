@@ -139,6 +139,7 @@ class Transaction {
   final double subTotal;
   final double tax;
   final double discount;
+  final double? discountPercentage;
   final double memberDiscount;
   final double promoDiscount;
   final double total;
@@ -159,6 +160,7 @@ class Transaction {
     required this.subTotal,
     required this.tax,
     required this.discount,
+    this.discountPercentage,
     required this.memberDiscount,
     required this.promoDiscount,
     required this.total,
@@ -181,6 +183,7 @@ class Transaction {
       subTotal: (json['sub_total'] as num).toDouble(),
       tax: (json['tax'] as num).toDouble(),
       discount: (json['discount'] as num? ?? 0.0).toDouble(),
+      discountPercentage: (json['discount_percentage'] as num?)?.toDouble(),
       memberDiscount: (json['member_discount'] as num? ?? 0.0).toDouble(),
       promoDiscount: (json['promo_discount'] as num? ?? 0.0).toDouble(),
       total: (json['total'] as num).toDouble(),

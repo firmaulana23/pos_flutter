@@ -1452,7 +1452,7 @@ Content-Type: application/json
         }
     ],
     "tax": 2500,
-    "discount": 0
+    "discount_percentage": 10
 }
 ```
 
@@ -1461,7 +1461,10 @@ Content-Type: application/json
 - `items` (array, required): Array of menu items to purchase
 - `payment_method` (string, required): Payment method (cash, card, etc.)
 - `tax` (number, required): Tax amount in smallest currency unit
-- `discount` (number, required): Discount amount in smallest currency unit
+- `discount` (number, optional): Discount amount in smallest currency unit. If `discount_percentage` is also provided, `discount` will be ignored.
+- `discount_percentage` (number, optional): Discount percentage to be applied to the subtotal.
+- `member_id` (number, optional): ID of the member to apply their discount.
+- `promo_id` (number, optional): ID of the promo to apply.
 
 **Response:**
 ```json
@@ -1530,6 +1533,7 @@ Authorization: Bearer <token>
             "sub_total": 46000,
             "tax": 2500,
             "discount": 0,
+            "discount_percentage": 10,
             "total": 48500,
             "created_at": "2024-01-01T12:00:00Z",
             "updated_at": "2024-01-01T12:30:00Z",

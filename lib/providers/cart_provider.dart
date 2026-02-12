@@ -290,8 +290,8 @@ class CartProvider with ChangeNotifier {
         'member_id': _member?.id,
         'promo_id': _promo?.id,
         'tax': tax,
-        'discount':
-            _manualDiscountPercentage, // Send fixed manual discount amount
+        'discount_percentage':
+            _manualDiscountPercentage, // Send percentage
         'items': _items
             .map(
               (item) => {
