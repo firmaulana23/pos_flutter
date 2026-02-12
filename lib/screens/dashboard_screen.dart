@@ -218,20 +218,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Overview',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        Text(
+          "Today's Statistics",
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
+          childAspectRatio: 1.2,
           children: [
             _buildStatCard(
               'Total Sales',
@@ -265,40 +263,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
-    return CustomCard(
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.7), color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            Icon(icon, color: Colors.white, size: 32),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  child: Icon(icon, color: color, size: 24),
                 ),
-                const Spacer(),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
             ),
           ],
         ),
@@ -316,40 +323,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Sales by Payment Method',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 16),
         CustomCard(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: salesByPaymentMethod.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final item = salesByPaymentMethod[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: _getRankColor(index),
-                    child: const Icon(Icons.payment, color: Colors.white),
-                  ),
-                  title: Text(
-                    item.paymentMethod,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  trailing: Text(
-                    AppFormatters.formatCurrency(item.totalSales),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                );
-              },
+            child: Column(
+              children: salesByPaymentMethod
+                  .map((item) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _getPaymentMethodColor(item.paymentMethod)
+                                    .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _getPaymentMethodIcon(item.paymentMethod),
+                                color:
+                                    _getPaymentMethodColor(item.paymentMethod),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                item.paymentMethod,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            Text(
+                              AppFormatters.formatCurrency(item.totalSales),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ))
+                  .toList(),
             ),
           ),
         ),
@@ -357,16 +377,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 0:
-        return Colors.amber.shade700;
-      case 1:
-        return Colors.grey.shade600;
-      case 2:
-        return Colors.brown.shade400;
+  Color _getPaymentMethodColor(String paymentMethod) {
+    switch (paymentMethod.toLowerCase()) {
+      case 'cash':
+        return Colors.green;
+      case 'qris':
+        return Colors.blue;
+      case 'debit card':
+        return Colors.orange;
       default:
-        return AppColors.primary.withOpacity(0.6);
+        return Colors.grey;
+    }
+  }
+
+  IconData _getPaymentMethodIcon(String paymentMethod) {
+    switch (paymentMethod.toLowerCase()) {
+      case 'cash':
+        return Icons.money;
+      case 'qris':
+        return Icons.qr_code;
+      case 'debit card':
+        return Icons.credit_card;
+      default:
+        return Icons.payment;
     }
   }
 }
