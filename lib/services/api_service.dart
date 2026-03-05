@@ -19,9 +19,55 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.148:8080/api/v1';
-  static const String publicBaseUrl =
-      'http://192.168.1.148:8080/api/v1/public';
+  // Primary URLs (local IP)
+  static const String _primaryBaseUrl = 'http://192.168.1.175:8080/api/v1';
+  static const String _primaryPublicBaseUrl =
+      'http://192.168.1.175:8080/api/v1/public';
+
+  // Backup URLs (domain-based fallback)
+  static const String _backupBaseUrl =
+      'https://api.zona12.my.id/api/v1';
+  static const String _backupPublicBaseUrl =
+      'https://api.zona12.my.id/api/v1/public';
+
+  // Active base URLs — switched automatically on failure
+  static String baseUrl = _primaryBaseUrl;
+  static String publicBaseUrl = _primaryPublicBaseUrl;
+
+  // Track which URL is currently active
+  static bool _usingBackup = false;
+
+  /// Executes [request]. If it throws a connection error and we are not
+  /// already on the backup URL, switches to the backup and retries once.
+  static Future<http.Response> _executeWithFallback(
+    Future<http.Response> Function() request,
+  ) async {
+    try {
+      final response = await request().timeout(const Duration(seconds: 10));
+      // If we previously fell back and now primary succeeds, reset (optional)
+      return response;
+    } on Exception catch (e) {
+      // SocketException, TimeoutException, HandshakeException, etc.
+      if (!_usingBackup) {
+        print(
+          '[ApiService] Primary URL failed ($e). Switching to backup URL...',
+        );
+        _usingBackup = true;
+        baseUrl = _backupBaseUrl;
+        publicBaseUrl = _backupPublicBaseUrl;
+        try {
+          final response =
+              await request().timeout(const Duration(seconds: 10));
+          print('[ApiService] Backup URL succeeded.');
+          return response;
+        } catch (e2) {
+          print('[ApiService] Backup URL also failed: $e2');
+          rethrow;
+        }
+      }
+      rethrow;
+    }
+  }
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static String? _authToken;
@@ -89,10 +135,14 @@ class ApiService {
     String email,
     String password,
   ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: await _getHeaders(includeAuth: false),
-      body: json.encode({'username': email, 'password': password}),
+    final headers = await _getHeaders(includeAuth: false);
+    final body = json.encode({'username': email, 'password': password});
+    final response = await _executeWithFallback(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: headers,
+        body: body,
+      ),
     );
 
     print('Login response status: ${response.statusCode}'); // Debug output
@@ -112,19 +162,22 @@ class ApiService {
     String password,
     String name,
   ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: await _getHeaders(includeAuth: false),
-      body: json.encode({'email': email, 'password': password, 'name': name}),
+    final headers = await _getHeaders(includeAuth: false);
+    final body = json.encode({'email': email, 'password': password, 'name': name});
+    final response = await _executeWithFallback(
+      () => http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: headers,
+        body: body,
+      ),
     );
-
     return _handleResponse(response);
   }
 
   static Future<User> getProfile() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/profile'),
-      headers: await _getHeaders(),
+    final headers = await _getHeaders();
+    final response = await _executeWithFallback(
+      () => http.get(Uri.parse('$baseUrl/profile'), headers: headers),
     );
 
     final data = _handleResponse(response);
