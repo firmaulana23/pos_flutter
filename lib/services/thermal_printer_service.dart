@@ -157,9 +157,14 @@ class ThermalPrinterService {
   }
 
   static Future<void> tryReconnectPrinter() async {
-    final savedId = await _storage.read(key: _printerKey);
-    if (savedId != null && savedId.isNotEmpty && !_isConnected) {
-      await connectToPrinter(savedId);
+    try {
+      final savedId = await _storage.read(key: _printerKey);
+      if (savedId != null && savedId.isNotEmpty && !_isConnected) {
+        await connectToPrinter(savedId);
+      }
+    } catch (e) {
+      debugPrint('Error reading printer ID from secure storage: $e');
+      // If secure storage throws an error (e.g. BadPaddingException), we just skip reconnection
     }
   }
 
