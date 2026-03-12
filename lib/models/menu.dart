@@ -18,8 +18,12 @@ class Category {
       id: json['id'],
       name: json['name'],
       description: json['description'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
     );
   }
 
@@ -83,12 +87,16 @@ class MenuItem {
       name: json['name'],
       description: json['description'],
       price: (json['price'] as num).toDouble(),
-      cogs: (json['cogs'] as num).toDouble(),
-      categoryId: json['category_id'],
+      cogs: (json['cogs'] as num?)?.toDouble() ?? 0.0,
+      categoryId: json['category_id'] ?? 0,
       imageUrl: json['image_url'],
       isAvailable: json['is_available'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
       category: json['category'] != null
           ? Category.fromJson(json['category'])
           : null,
@@ -184,8 +192,12 @@ class AddOn {
           ? (json['margin'] as num).toDouble()
           : null,
       isAvailable: json['is_available'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
     );
   }
 

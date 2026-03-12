@@ -20,15 +20,15 @@ class ApiException implements Exception {
 
 class ApiService {
   // Primary URLs (local IP)
-  static const String _primaryBaseUrl = 'http://192.168.1.175:8080/api/v1';
+  static const String _primaryBaseUrl = 'http://localhost:8080/api/v1';
   static const String _primaryPublicBaseUrl =
-      'http://192.168.1.175:8080/api/v1/public';
+      'http://localhost:8080/api/v1/public';
 
   // Backup URLs (domain-based fallback)
   static const String _backupBaseUrl =
-      'https://api.zona12.my.id/api/v1';
+      'https://localhost:8080/api/v1';
   static const String _backupPublicBaseUrl =
-      'https://api.zona12.my.id/api/v1/public';
+      'https://localhost:8080/api/v1/public';
 
   // Active base URLs — switched automatically on failure
   static String baseUrl = _primaryBaseUrl;
@@ -151,8 +151,9 @@ class ApiService {
     final data = _handleResponse(response);
     print('Parsed login data: $data'); // Debug output
 
-    if (data['token'] != null) {
-      await setAuthToken(data['token']);
+    final responseData = data['data'] as Map<String, dynamic>?;
+    if (responseData != null && responseData['token'] != null) {
+      await setAuthToken(responseData['token']);
     }
     return data;
   }
@@ -181,7 +182,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return User.fromJson(data);
+    final userData = data['data'] as Map<String, dynamic>? ?? data;
+    return User.fromJson(userData);
   }
 
   static Future<User> updateProfile(Map<String, dynamic> userData) async {
@@ -192,7 +194,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return User.fromJson(data);
+    final profileData = data['data'] as Map<String, dynamic>? ?? data;
+    return User.fromJson(profileData);
   }
 
   // Menu API
@@ -209,14 +212,21 @@ class ApiService {
         headers: await _getHeaders(includeAuth: !usePublicEndpoint),
       );
 
-      // Handle response directly since categories API returns a direct array
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty) return [];
-        final data = json.decode(response.body);
+        final jsonData = json.decode(response.body);
 
-        // According to API docs, categories are returned as direct array
-        if (data is List) {
-          return (data as List)
+        // API returns {success, message, data: [...]}
+        List? categoriesList;
+        if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
+          categoriesList = jsonData['data'] as List;
+        } else if (jsonData is List) {
+          // Fallback for direct array
+          categoriesList = jsonData;
+        }
+
+        if (categoriesList != null) {
+          return categoriesList
               .map((category) => Category.fromJson(category))
               .toList();
         }
@@ -321,7 +331,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return Category.fromJson(data);
+    final categoryResult = data['data'] as Map<String, dynamic>? ?? data;
+    return Category.fromJson(categoryResult);
   }
 
   static Future<MenuItem> createMenuItem(Map<String, dynamic> itemData) async {
@@ -332,7 +343,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return MenuItem.fromJson(data);
+    final itemData2 = data['data'] as Map<String, dynamic>? ?? data;
+    return MenuItem.fromJson(itemData2);
   }
 
   static Future<AddOn> createAddOn(Map<String, dynamic> addOnData) async {
@@ -343,7 +355,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return AddOn.fromJson(data);
+    final addOnResult = data['data'] as Map<String, dynamic>? ?? data;
+    return AddOn.fromJson(addOnResult);
   }
 
   // Add menu items to an existing add-on
@@ -379,18 +392,19 @@ class ApiService {
     Map<String, dynamic> categoryData,
   ) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/categories/$id'),
+      Uri.parse('$baseUrl/menu/categories/$id'),
       headers: await _getHeaders(),
       body: json.encode(categoryData),
     );
 
     final data = _handleResponse(response);
-    return Category.fromJson(data);
+    final categoryResult = data['data'] as Map<String, dynamic>? ?? data;
+    return Category.fromJson(categoryResult);
   }
 
   static Future<void> deleteCategory(int id) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/categories/$id'),
+      Uri.parse('$baseUrl/menu/categories/$id'),
       headers: await _getHeaders(),
     );
 
@@ -408,7 +422,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return MenuItem.fromJson(data);
+    final itemResult = data['data'] as Map<String, dynamic>? ?? data;
+    return MenuItem.fromJson(itemResult);
   }
 
   static Future<void> deleteMenuItem(int id) async {
@@ -431,7 +446,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return AddOn.fromJson(data);
+    final addOnResult = data['data'] as Map<String, dynamic>? ?? data;
+    return AddOn.fromJson(addOnResult);
   }
 
   static Future<void> deleteAddOn(int id) async {
@@ -463,7 +479,6 @@ class ApiService {
     );
     print('ApiService: Payment methods response body: ${response.body}');
 
-    // Handle response differently for payment methods since they return a direct array
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) {
         print(
@@ -472,12 +487,20 @@ class ApiService {
         return [];
       }
 
-      final data = json.decode(response.body);
-      print('ApiService: Parsed payment methods data: $data');
+      final jsonData = json.decode(response.body);
+      print('ApiService: Parsed payment methods data: $jsonData');
 
-      // According to API docs, payment methods are returned as direct array
-      if (data is List) {
-        final methods = (data as List)
+      // API returns {success, message, data: [...]}
+      List? methodsList;
+      if (jsonData is Map<String, dynamic> && jsonData['data'] is List) {
+        methodsList = jsonData['data'] as List;
+      } else if (jsonData is List) {
+        // Fallback for direct array
+        methodsList = jsonData;
+      }
+
+      if (methodsList != null) {
+        final methods = methodsList
             .map((method) => PaymentMethod.fromJson(method))
             .toList();
         print('ApiService: Converted ${methods.length} payment methods');
@@ -597,7 +620,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return Transaction.fromJson(data);
+    final txData = data['data'] as Map<String, dynamic>? ?? data;
+    return Transaction.fromJson(txData);
   }
 
   static Future<Transaction> createTransaction(
@@ -609,7 +633,8 @@ class ApiService {
       body: json.encode(transactionData),
     );
     final data = _handleResponse(response);
-    return Transaction.fromJson(data);
+    final txData = data['data'] as Map<String, dynamic>? ?? data;
+    return Transaction.fromJson(txData);
   }
 
   static Future<Transaction> payTransaction(
@@ -623,7 +648,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return Transaction.fromJson(data);
+    final txData = data['data'] as Map<String, dynamic>? ?? data;
+    return Transaction.fromJson(txData);
   }
 
   static Future<void> deleteTransaction(int id) async {
@@ -653,7 +679,8 @@ class ApiService {
 
     final data = _handleResponse(response);
     print('API Service: Add item parsed response: $data');
-    return TransactionItem.fromJson(data);
+    final itemResult = data['data'] as Map<String, dynamic>? ?? data;
+    return TransactionItem.fromJson(itemResult);
   }
 
   // Update an existing transaction item
@@ -699,7 +726,8 @@ class ApiService {
 
       final data = _handleResponse(response);
       print('API Service: Update item parsed response: $data');
-      return TransactionItem.fromJson(data);
+      final itemResult = data['data'] as Map<String, dynamic>? ?? data;
+      return TransactionItem.fromJson(itemResult);
     } catch (e) {
       print('API Service: Exception during API call: $e');
       if (e is ApiException) {
@@ -746,7 +774,8 @@ class ApiService {
     print('API Service: Update transaction response body: ${response.body}');
 
     final data = _handleResponse(response);
-    return Transaction.fromJson(data);
+    final txData = data['data'] as Map<String, dynamic>? ?? data;
+    return Transaction.fromJson(txData);
   }
 
   // Dashboard API
@@ -775,7 +804,8 @@ class ApiService {
     );
 
     final data = _handleResponse(response);
-    return DashboardData.fromJson(data);
+    final dashData = data['data'] as Map<String, dynamic>? ?? data;
+    return DashboardData.fromJson(dashData);
   }
 
   // Get add-ons for a specific menu item (includes both global and menu-specific add-ons)
@@ -806,11 +836,15 @@ class ApiService {
 
         print('Menu Item Add-ons API Response: $jsonData');
 
-        // API returns {"add_ons": [...], "menu_item": {...}}
-        if (jsonData is Map<String, dynamic> && jsonData['add_ons'] is List) {
-          final data = jsonData['add_ons'] as List;
-          print('Menu Item Add-ons received: ${data.length} items');
-          return data.map((addOn) => AddOn.fromJson(addOn)).toList();
+        // API returns {success, message, data: {menu_item: {...}, add_ons: [...]}}
+        if (jsonData is Map<String, dynamic>) {
+          // Extract from data wrapper first
+          final dataWrapper = jsonData['data'] as Map<String, dynamic>? ?? jsonData;
+          if (dataWrapper['add_ons'] is List) {
+            final addOnsList = dataWrapper['add_ons'] as List;
+            print('Menu Item Add-ons received: ${addOnsList.length} items');
+            return addOnsList.map((addOn) => AddOn.fromJson(addOn)).toList();
+          }
         }
 
         print(
@@ -861,12 +895,15 @@ class ApiService {
 
         print('Add-on Menu Items API Response: $jsonData');
 
-        // API returns add-on data with menu_items array
-        if (jsonData is Map<String, dynamic> &&
-            jsonData['menu_items'] is List) {
-          final data = jsonData['menu_items'] as List;
-          print('Add-on Menu Items received: ${data.length} items');
-          return data.map((menuItem) => MenuItem.fromJson(menuItem)).toList();
+        // API returns {success, message, data: {..., menu_items: [...]}}
+        if (jsonData is Map<String, dynamic>) {
+          // Extract from data wrapper first
+          final dataWrapper = jsonData['data'] as Map<String, dynamic>? ?? jsonData;
+          if (dataWrapper['menu_items'] is List) {
+            final menuItemsList = dataWrapper['menu_items'] as List;
+            print('Add-on Menu Items received: ${menuItemsList.length} items');
+            return menuItemsList.map((menuItem) => MenuItem.fromJson(menuItem)).toList();
+          }
         }
 
         print(

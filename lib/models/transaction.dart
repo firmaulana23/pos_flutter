@@ -192,7 +192,9 @@ class Transaction {
       customerName:
           json['customer_name'] ??
           '', // Default to empty string if not provided
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
