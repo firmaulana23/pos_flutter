@@ -20,15 +20,15 @@ class ApiException implements Exception {
 
 class ApiService {
   // Primary URLs (local IP)
-  static const String _primaryBaseUrl = 'http://localhost:8080/api/v1';
+  static const String _primaryBaseUrl = 'http://192.168.1.175:8080/api/v1';
   static const String _primaryPublicBaseUrl =
-      'http://localhost:8080/api/v1/public';
+      'http://192.168.1.175:8080/api/v1/public';
 
   // Backup URLs (domain-based fallback)
   static const String _backupBaseUrl =
-      'https://localhost:8080/api/v1';
+      'https://api.zona12.my.id/api/v1';
   static const String _backupPublicBaseUrl =
-      'https://localhost:8080/api/v1/public';
+      'https://api.zona12.my.id/api/v1/public';
 
   // Active base URLs — switched automatically on failure
   static String baseUrl = _primaryBaseUrl;
@@ -204,8 +204,8 @@ class ApiService {
   }) async {
     try {
       final url = usePublicEndpoint
-          ? '$publicBaseUrl/menu/categories'
-          : '$baseUrl/menu/categories';
+          ? '$publicBaseUrl/menu/categories?limit=1000'
+          : '$baseUrl/menu/categories?limit=1000';
 
       final response = await http.get(
         Uri.parse(url),
@@ -250,8 +250,8 @@ class ApiService {
     bool usePublicEndpoint = false,
   }) async {
     final url = usePublicEndpoint
-        ? '$publicBaseUrl/menu/items'
-        : '$baseUrl/menu/items';
+        ? '$publicBaseUrl/menu/items?limit=1000'
+        : '$baseUrl/menu/items?limit=1000';
 
     final response = await http.get(
       Uri.parse(url),
@@ -274,8 +274,8 @@ class ApiService {
   static Future<List<AddOn>> getAddOns({bool usePublicEndpoint = false}) async {
     try {
       final url = usePublicEndpoint
-          ? '$publicBaseUrl/add-ons'
-          : '$baseUrl/add-ons';
+          ? '$publicBaseUrl/add-ons?limit=1000'
+          : '$baseUrl/add-ons?limit=1000';
 
       print(
         'Add-ons API: Calling URL: $url (usePublicEndpoint: $usePublicEndpoint)',
@@ -464,8 +464,8 @@ class ApiService {
     bool usePublicEndpoint = false,
   }) async {
     final url = usePublicEndpoint
-        ? '$publicBaseUrl/payment-methods'
-        : '$baseUrl/payment-methods';
+        ? '$publicBaseUrl/payment-methods?limit=1000'
+        : '$baseUrl/payment-methods?limit=1000';
 
     print('ApiService: Calling payment methods API: $url');
 

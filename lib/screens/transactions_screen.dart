@@ -619,6 +619,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               padding: const EdgeInsets.only(left: 8),
                               color: Colors.blue,
                             ),
+                          // Delete item button for pending transactions
+                          if (isPending)
+                            IconButton(
+                              icon: const Icon(Icons.delete, size: 18),
+                              onPressed: () => _showDeleteItemConfirmation(transaction, item),
+                              tooltip: 'Delete Item',
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.only(left: 8),
+                              color: Colors.red,
+                            ),
                         ],
                       ),
                     );
@@ -1214,7 +1224,63 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
+  // Show confirmation dialog before deleting a transaction item
+  void _showDeleteItemConfirmation(Transaction transaction, TransactionItem item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Item'),
+        content: Text(
+          'Are you sure you want to delete ${item.quantity}x ${item.menuItem?.name ?? 'this item'}?\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final transactionProvider = Provider.of<TransactionProvider>(
+                context,
+                listen: false,
+              );
+
+              final success = await transactionProvider.deleteTransactionItem(
+                transaction.id!,
+                item.id!,
+              );
+
+              if (!mounted) return;
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Item deleted successfully'),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      transactionProvider.error ?? 'Failed to delete item',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Show confirmation dialog before deleting a transaction
+
   void _showDeleteConfirmation(Transaction transaction) {
     final isPending = transaction.status == 'pending';
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
