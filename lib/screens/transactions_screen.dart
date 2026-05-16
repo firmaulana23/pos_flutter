@@ -8,6 +8,7 @@ import '../models/menu.dart';
 import '../utils/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/picker_modals.dart';
 import 'package:flutter_pos/services/thermal_printer_service.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -1352,7 +1353,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   // Process payment for a pending transaction
-  void _showPaymentDialog(Transaction transaction) {
+  void _showPaymentDialog(Transaction initialTransaction) {
     final transactionProvider = Provider.of<TransactionProvider>(
       context,
       listen: false,
@@ -1363,201 +1364,403 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Process Payment'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Transaction: ${transaction.transactionNo ?? "#${transaction.id}"}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text('Total: ${AppFormatters.formatCurrency(transaction.total)}'),
-              const SizedBox(height: 16),
-              const Text('Select Payment Method:'),
-              const SizedBox(height: 8),
-              if (transactionProvider.paymentMethods.isEmpty)
-                const Text(
-                  'Loading payment methods...',
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                )
-              else
-                StatefulBuilder(
-                  builder: (context, setState) {
-                    return DropdownButtonFormField<String>(
-                      value: selectedPaymentMethod,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+      builder: (BuildContext dialogContext) {
+        return Consumer<TransactionProvider>(
+          builder: (context, provider, _) {
+            // Always read the latest version of this transaction
+            final transaction = provider.transactions.firstWhere(
+              (t) => t.id == initialTransaction.id,
+              orElse: () => initialTransaction,
+            );
+
+            final bool hasMember = transaction.memberDiscount > 0;
+            final bool hasPromo = transaction.promoDiscount > 0;
+
+            return AlertDialog(
+              title: const Text('Process Payment'),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Transaction: ${transaction.transactionNo ?? "#${transaction.id}"}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      items: transactionProvider.paymentMethods
-                          .where((pm) => pm.isActive)
-                          .map((pm) {
-                            return DropdownMenuItem<String>(
-                              value: pm.code,
-                              child: Text(pm.name),
-                            );
-                          })
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPaymentMethod = value ?? '';
-                        });
-                      },
-                    );
-                  },
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: selectedPaymentMethod.isEmpty
-                  ? null
-                  : () async {
-                      Navigator.pop(context);
-                      double uangDiterima = 0.0;
-                      double kembalian = 0.0;
-                      if (selectedPaymentMethod.toLowerCase() == 'cash') {
-                        uangDiterima =
-                            await showDialog<double>(
-                              context: context,
-                              builder: (context) {
-                                final TextEditingController controller =
-                                    TextEditingController();
-                                double change = 0.0;
-                                return StatefulBuilder(
-                                  builder: (context, setState) {
-                                    double total = transaction.total;
-                                    double received =
-                                        double.tryParse(controller.text) ?? 0.0;
-                                    change = (received - total).clamp(
-                                      0.0,
-                                      double.infinity,
-                                    );
-                                    return AlertDialog(
-                                      title: const Text('Pembayaran'),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text('Total'),
-                                              Text(
-                                                AppFormatters.formatCurrency(
-                                                  total,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextFormField(
-                                            controller: controller,
-                                            keyboardType: TextInputType.number,
-                                            autofocus: true,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Uang Diterima',
-                                              prefixText: 'Rp ',
-                                            ),
-                                            onChanged: (val) => setState(() {}),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text('Kembalian'),
-                                              Text(
-                                                AppFormatters.formatCurrency(
-                                                  change,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text('Batal'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed:
-                                              (double.tryParse(
-                                                        controller.text,
-                                                      ) ??
-                                                      0.0) >=
-                                                  total
-                                              ? () => Navigator.pop(
-                                                  context,
-                                                  double.tryParse(
-                                                        controller.text,
-                                                      ) ??
-                                                      0.0,
-                                                )
-                                              : null,
-                                          child: const Text('Bayar'),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                      const SizedBox(height: 16),
+
+                      // ── Member & Promo section ──
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.inputBorder),
+                        ),
+                        child: Column(
+                          children: [
+                            // Member row
+                            _buildPickerRow(
+                              icon: Icons.person_outline_rounded,
+                              color: AppColors.secondary,
+                              label: 'Member',
+                              value: hasMember
+                                  ? transaction.customerName
+                                  : 'Pilih Member',
+                              isActive: hasMember,
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: dialogContext,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => MemberPickerModal(
+                                    onSelected: (member) async {
+                                      await provider.updateTransaction(
+                                        transaction.id!,
+                                        customerName: transaction.customerName,
+                                        tax: transaction.tax,
+                                        memberId: member.id,
+                                      );
+                                    },
+                                  ),
                                 );
                               },
-                            ) ??
-                            0.0;
-                        kembalian = (uangDiterima - transaction.total).clamp(
-                          0.0,
-                          double.infinity,
-                        );
-                        if (uangDiterima < transaction.total) return;
-                      } else {
-                        uangDiterima = transaction.total;
-                        kembalian = 0.0;
-                      }
-                      final success = await transactionProvider.payTransaction(
-                        transaction.id!,
-                        selectedPaymentMethod,
-                        uangDiterima: uangDiterima,
-                        kembalian: kembalian,
-                      );
-
-                      if (!context.mounted) return;
-
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Payment processed successfully'),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              transactionProvider.error ??
-                                  'Failed to process payment',
                             ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(height: 1),
+                            ),
+                            // Promo row
+                            _buildPickerRow(
+                              icon: Icons.local_offer_outlined,
+                              color: AppColors.primary,
+                              label: 'Promo',
+                              value: hasPromo
+                                  ? 'Promo Applied (-${AppFormatters.formatCurrency(transaction.promoDiscount)})'
+                                  : 'Pilih Promo',
+                              isActive: hasPromo,
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: dialogContext,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => PromoPickerModal(
+                                    onSelected: (promo) async {
+                                      await provider.updateTransaction(
+                                        transaction.id!,
+                                        customerName: transaction.customerName,
+                                        tax: transaction.tax,
+                                        promoId: promo.id,
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ── Price summary ──
+                      _priceLine('Subtotal', AppFormatters.formatCurrency(transaction.subTotal)),
+                      if (hasPromo)
+                        _priceLine(
+                          'Promo Discount',
+                          '-${AppFormatters.formatCurrency(transaction.promoDiscount)}',
+                          color: AppColors.success,
+                        ),
+                      if (hasMember)
+                        _priceLine(
+                          'Member Discount',
+                          '-${AppFormatters.formatCurrency(transaction.memberDiscount)}',
+                          color: AppColors.success,
+                        ),
+                      if (transaction.tax > 0)
+                        _priceLine('Tax', AppFormatters.formatCurrency(transaction.tax)),
+                      const Divider(height: 16),
+                      _priceLine(
+                        'Total',
+                        AppFormatters.formatCurrency(transaction.total),
+                        isBold: true,
+                        fontSize: 16,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ── Payment method ──
+                      const Text(
+                        'Payment Method:',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      if (provider.paymentMethods.isEmpty)
+                        const Text(
+                          'Loading payment methods...',
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        )
+                      else
+                        StatefulBuilder(
+                          builder: (context, setDropdownState) {
+                            return DropdownButtonFormField<String>(
+                              value: selectedPaymentMethod,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              items: provider.paymentMethods
+                                  .where((pm) => pm.isActive)
+                                  .map((pm) {
+                                    return DropdownMenuItem<String>(
+                                      value: pm.code,
+                                      child: Text(pm.name),
+                                    );
+                                  })
+                                  .toList(),
+                              onChanged: (value) {
+                                setDropdownState(() {
+                                  selectedPaymentMethod = value ?? '';
+                                });
+                              },
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
               ),
-              child: const Text('Process Payment'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedPaymentMethod.isEmpty
+                      ? null
+                      : () async {
+                          Navigator.pop(dialogContext);
+                          double uangDiterima = 0.0;
+                          double kembalian = 0.0;
+                          if (selectedPaymentMethod.toLowerCase() == 'cash') {
+                            uangDiterima =
+                                await showDialog<double>(
+                                  context: context,
+                                  builder: (context) {
+                                    final controller = TextEditingController();
+                                    double change = 0.0;
+                                    return StatefulBuilder(
+                                      builder: (context, setState) {
+                                        double total = transaction.total;
+                                        double received =
+                                            double.tryParse(controller.text) ?? 0.0;
+                                        change = (received - total).clamp(
+                                          0.0,
+                                          double.infinity,
+                                        );
+                                        return AlertDialog(
+                                          title: const Text('Pembayaran'),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  const Text('Total'),
+                                                  Text(
+                                                    AppFormatters.formatCurrency(total),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: controller,
+                                                keyboardType: TextInputType.number,
+                                                autofocus: true,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Uang Diterima',
+                                                  prefixText: 'Rp ',
+                                                ),
+                                                onChanged: (val) => setState(() {}),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  const Text('Kembalian'),
+                                                  Text(
+                                                    AppFormatters.formatCurrency(change),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('Batal'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed:
+                                                  (double.tryParse(controller.text) ?? 0.0) >= total
+                                                      ? () => Navigator.pop(
+                                                          context,
+                                                          double.tryParse(controller.text) ?? 0.0,
+                                                        )
+                                                      : null,
+                                              child: const Text('Bayar'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                ) ??
+                                0.0;
+                            kembalian = (uangDiterima - transaction.total)
+                                .clamp(0.0, double.infinity);
+                            if (uangDiterima < transaction.total) return;
+                          } else {
+                            uangDiterima = transaction.total;
+                            kembalian = 0.0;
+                          }
+                          final success = await provider.payTransaction(
+                            transaction.id!,
+                            selectedPaymentMethod,
+                            uangDiterima: uangDiterima,
+                            kembalian: kembalian,
+                          );
+
+                          if (!context.mounted) return;
+
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Payment processed successfully'),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  provider.error ?? 'Failed to process payment',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Process Payment'),
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  /// Reusable row for Member / Promo picker inside the payment dialog
+  Widget _buildPickerRow({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? color : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.onSurface.withValues(alpha: 0.3),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A single line in the price summary
+  Widget _priceLine(String label, String amount, {
+    Color? color,
+    bool isBold = false,
+    double fontSize = 14,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: color,
+            ),
+          ),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

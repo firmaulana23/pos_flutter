@@ -321,6 +321,8 @@ class TransactionProvider with ChangeNotifier {
     String? customerName,
     double? tax,
     double? discount,
+    int? memberId,
+    int? promoId,
   }) async {
     try {
       _setLoading(true);
@@ -330,6 +332,8 @@ class TransactionProvider with ChangeNotifier {
       if (customerName != null) updateData['customer_name'] = customerName;
       if (tax != null) updateData['tax'] = tax;
       if (discount != null) updateData['discount'] = discount;
+      if (memberId != null) updateData['member_id'] = memberId;
+      if (promoId != null) updateData['promo_id'] = promoId;
 
       await ApiService.updateTransaction(id, updateData);
 
