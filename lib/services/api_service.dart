@@ -20,9 +20,9 @@ class ApiException implements Exception {
 
 class ApiService {
   // Primary URLs (local IP)
-  static const String _primaryBaseUrl = 'http://192.168.1.175:8080/api/v1';
+  static const String _primaryBaseUrl = 'http://localhost:8080/api/v1';
   static const String _primaryPublicBaseUrl =
-      'http://192.168.1.175:8080/api/v1/public';
+      'http://localhost:8080/api/v1/public';
 
   // Backup URLs (domain-based fallback)
   static const String _backupBaseUrl =
@@ -535,6 +535,26 @@ class ApiService {
     }
   }
 
+  static Future<List<Member>> getMembers() async {
+    try {
+      final headers = await _getHeaders();
+      final resp = await _executeWithFallback(
+        () => http.get(
+          Uri.parse('$baseUrl/members?limit=1000'),
+          headers: headers,
+        ),
+      );
+
+      final data = _handleResponse(resp);
+      final membersList = data['data'] as List?;
+      if (membersList == null) return [];
+      return membersList.map((m) => Member.fromJson(m)).toList();
+    } catch (e) {
+      print('getMembers Error: $e');
+      return [];
+    }
+  }
+
   static Future<Promo> validatePromo(String promoCode) async {
     final response = await http.get(
       Uri.parse('$baseUrl/promos/validate?code=$promoCode'),
@@ -547,6 +567,26 @@ class ApiService {
       return Promo.fromJson(data['data']);
     } else {
       throw ApiException(data['message'] ?? 'Invalid promo code');
+    }
+  }
+
+  static Future<List<Promo>> getPromos() async {
+    try {
+      final headers = await _getHeaders();
+      final resp = await _executeWithFallback(
+        () => http.get(
+          Uri.parse('$baseUrl/promos?limit=1000'),
+          headers: headers,
+        ),
+      );
+
+      final data = _handleResponse(resp);
+      final promosList = data['data'] as List?;
+      if (promosList == null) return [];
+      return promosList.map((p) => Promo.fromJson(p)).toList();
+    } catch (e) {
+      print('getPromos Error: $e');
+      return [];
     }
   }
 

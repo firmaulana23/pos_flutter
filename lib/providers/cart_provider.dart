@@ -220,6 +220,22 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Apply a member that was already selected from the member picker.
+  /// Skips the API lookup since the member object is already loaded.
+  void applyMemberDirectly(Member member) {
+    _setValidationError(null);
+
+    // Basic validation
+    if (member.expiredDate.isBefore(DateTime.now())) {
+      _setValidationError('Member card has expired.');
+      return;
+    }
+
+    _member = member;
+    _recalculateDiscounts();
+    notifyListeners();
+  }
+
   Future<bool> applyPromo(String code) async {
     _setLoading(true);
     _setValidationError(null);
@@ -261,6 +277,32 @@ class CartProvider with ChangeNotifier {
     _promoDiscount = 0.0;
     _recalculateDiscounts();
     _setValidationError(null);
+    notifyListeners();
+  }
+
+  /// Apply a promo that was already selected from the promo picker.
+  /// Skips the API lookup since the promo object is already loaded.
+  void applyPromoDirectly(Promo promo) {
+    _setValidationError(null);
+
+    if (!promo.isActive) {
+      _setValidationError('Promo tidak aktif.');
+      return;
+    }
+    if (promo.startAt != null && DateTime.now().isBefore(promo.startAt!)) {
+      _setValidationError('Promo belum dimulai.');
+      return;
+    }
+    if (promo.endAt != null && DateTime.now().isAfter(promo.endAt!)) {
+      _setValidationError('Promo sudah kadaluarsa.');
+      return;
+    }
+    if (_member != null && !promo.stackable) {
+      _setValidationError('Promo tidak dapat digabung dengan diskon member.');
+    }
+
+    _promo = promo;
+    _recalculateDiscounts();
     notifyListeners();
   }
 
